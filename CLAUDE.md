@@ -4,6 +4,14 @@ A comprehensible-input French learning web app: leveled content (CEFR A1–C2) p
 
 Full spec: [docs/PRD.md](docs/PRD.md) — read it before making product decisions this file doesn't cover.
 Architecture, stack, and tooling: [docs/PLANNING.md](docs/PLANNING.md).
+Milestone checklist: [docs/TASKS.md](docs/TASKS.md).
+
+## Session workflow — do this every time
+
+- **Start of every conversation:** read [docs/PLANNING.md](docs/PLANNING.md) for architecture/stack context.
+- **Before starting any work:** check [docs/TASKS.md](docs/TASKS.md) to see what milestone is in progress and what's already done — don't re-plan from scratch.
+- **The moment a task is done:** check it off in [docs/TASKS.md](docs/TASKS.md) — don't batch this for later.
+- **Whenever a new task is discovered** (a gap, a follow-up, a missed piece of scope): add it to [docs/TASKS.md](docs/TASKS.md) under the right milestone as it's found, not after the fact.
 
 ## Project status
 
