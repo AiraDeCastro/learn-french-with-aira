@@ -9,16 +9,17 @@ Working checklist derived from [PRD.md](PRD.md) (scope) and [PLANNING.md](PLANNI
 Scaffolding per [PLANNING.md §3](PLANNING.md#3-technology-stack); nothing product-specific yet.
 
 - [x] Init Next.js + TypeScript project, with Tailwind CSS configured
-- [ ] Set up ESLint, Prettier, and TypeScript strict mode
-- [ ] Provision Postgres (Neon or Supabase) and connect Prisma
-- [ ] Set up tRPC router scaffolding (client + server)
-- [ ] Configure Auth.js (email + at least one social provider)
-- [ ] Provision Cloudflare R2 bucket for audio/transcripts/cover art
-- [ ] Connect Vercel project with preview deploys on PR
-- [ ] Set up GitHub Actions: typecheck + lint + test on every PR
-- [ ] Wire up Sentry error tracking
-- [ ] Wire up PostHog (EU-hosted) analytics
-- [ ] Configure Vitest and Playwright test runners (empty smoke test passing)
+- [x] Set up ESLint, Prettier, and TypeScript strict mode
+- [ ] Provision Postgres (Neon or Supabase) and connect Prisma — **partially done:** Prisma is installed and confirmed working against a local database (`npm run db:dev`, no account needed); a hosted Neon/Supabase project for staging/production still needs to be created by hand — see [session summary in CLAUDE.md](../CLAUDE.md)
+- [x] Set up tRPC router scaffolding (client + server)
+- [ ] Configure Auth.js (email + at least one social provider) — **partially done:** Google + Resend magic-link sign-in are wired end-to-end in code; sign-in won't actually work until real Google OAuth and Resend credentials are added to `.env` (see `.env.example`)
+- [ ] Provision Cloudflare R2 bucket for audio/transcripts/cover art — blocked on a Cloudflare account being created
+- [ ] Connect Vercel project with preview deploys on PR — blocked on a Vercel account being created
+- [x] Set up GitHub Actions: typecheck + lint + test on every PR
+- [ ] Wire up Sentry error tracking — blocked on a Sentry account being created
+- [ ] Wire up PostHog (EU-hosted) analytics — blocked on a PostHog account being created
+- [x] Configure Vitest and Playwright test runners (empty smoke test passing)
+- [ ] Add a Playwright E2E job to CI (currently E2E only runs locally via `npm run test:e2e` — CI only runs the fast unit tests, to avoid a slow browser download on every push)
 
 ## M1 — Content Model & Admin Panel
 
@@ -100,4 +101,4 @@ Per PRD §13 Phase 3. New services likely needed here (e.g. speech-to-text) — 
 
 ---
 
-*Update this file as milestones complete or scope shifts — it should reflect current plan, not a frozen snapshot. Cross-reference [PRD.md](PRD.md) and [PLANNING.md](PLANNING.md) for the "why" behind any task.*
+_Update this file as milestones complete or scope shifts — it should reflect current plan, not a frozen snapshot. Cross-reference [PRD.md](PRD.md) and [PLANNING.md](PLANNING.md) for the "why" behind any task._

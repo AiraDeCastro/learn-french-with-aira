@@ -1,6 +1,6 @@
 # Learn French with Aira — Planning
 
-Companion to [PRD.md](PRD.md). The PRD defines *what* and *why*; this document defines *how it's built*. The stack in §3 is confirmed for MVP (Phase 1 of [PRD.md §13](PRD.md#13-phasing--milestones)) — revisit before Phase 2/3 if scope or team constraints change.
+Companion to [PRD.md](PRD.md). The PRD defines _what_ and _why_; this document defines _how it's built_. The stack in §3 is confirmed for MVP (Phase 1 of [PRD.md §13](PRD.md#13-phasing--milestones)) — revisit before Phase 2/3 if scope or team constraints change.
 
 ---
 
@@ -55,24 +55,24 @@ Content rights matter here too: `Lesson` needs a `source_type` (in-house / licen
 
 ## 3. Technology Stack
 
-| Layer | Choice | Why |
-|---|---|---|
-| **Language** | TypeScript, end to end | One language across client/server/schema keeps the content and progress data model consistent and typo-proof between reader UI and API. |
-| **Frontend framework** | Next.js (React) | SSR for fast first-paint on the reader (important on mobile web, per PRD's responsive-web requirement), file-based routing, API routes co-located with the app for MVP simplicity. |
-| **Styling** | Tailwind CSS | Fast to build a consistent, accessible (WCAG 2.1 AA target) reader UI without a heavy component library fighting custom audio-sync UI. |
-| **API layer** | tRPC on Next.js API routes | Typed client/server calls remove a class of bugs in progress/streak endpoints; no schema to hand-maintain against REST. |
-| **Database** | PostgreSQL | Relational fit for users, lessons, completions, known words, streaks — mostly joins and counts, not document-shaped data. |
-| **ORM** | Prisma | Typed schema/migrations matched to the TypeScript stack. |
-| **Object storage** | Cloudflare R2 (S3-compatible) | Audio files and cover art, kept out of the database and off the app server; no egress fees, which matters for audio-heavy traffic. |
-| **Auth** | Auth.js (NextAuth) | Email/social login without a third-party vendor holding learner data — fits the private-by-default stance in PRD §11, and has no separate account/cost to stand up. |
-| **Content authoring** | In-app admin panel (custom-built) | Content is the biggest production lift in the PRD's risk list, so authoring has to ship without a code deploy from day one. A minimal admin panel over the same Prisma schema is faster to build for MVP than integrating a CMS, and keeps content and app data in one database. Revisit a headless CMS (e.g. Sanity) only if a non-engineering content team scales up in Phase 2/3. |
-| **Word lookup / dictionary** | Self-hosted French↔English lexicon built from an open dataset (e.g. Wiktionary/FreeDict extract) | Keeps tap-to-translate instant and free of per-lookup API cost or a third-party dependency, and works with the offline-tolerant lesson flow required in PRD §11. |
-| **Lesson audio** | Recorded human narration for MVP | Pedagogical quality (natural pacing, real prosody) matters most at exactly the levels — A1 mini-stories — where the method concedes learners need the most scaffolding; TTS (e.g. ElevenLabs) is a Phase 2/3 option once content volume, not quality, is the bottleneck. |
-| **Hosting** | Vercel | First-class Next.js support, easy preview deploys for content/UI review. |
-| **Notifications** | Web Push + a transactional email provider (Resend) | Daily streak reminder; email as fallback/onboarding channel. |
-| **Analytics** | PostHog (EU-hosted) | Covers the PRD §10 metrics (retention, input hours, level-ups) without conflicting with the privacy stance in §11. |
-| **Testing** | Vitest (unit) + Playwright (E2E on the reader/player and streak flows) | The reader's audio-text sync and streak logic are exactly the kind of behavior that regresses silently without E2E coverage. |
-| **CI/CD** | GitHub Actions → Vercel | Test + typecheck on PR, deploy previews, deploy on merge to `master`. |
+| Layer                        | Choice                                                                                           | Why                                                                                                                                                                                                                                                                                                                                                                                  |
+| ---------------------------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Language**                 | TypeScript, end to end                                                                           | One language across client/server/schema keeps the content and progress data model consistent and typo-proof between reader UI and API.                                                                                                                                                                                                                                              |
+| **Frontend framework**       | Next.js (React)                                                                                  | SSR for fast first-paint on the reader (important on mobile web, per PRD's responsive-web requirement), file-based routing, API routes co-located with the app for MVP simplicity.                                                                                                                                                                                                   |
+| **Styling**                  | Tailwind CSS                                                                                     | Fast to build a consistent, accessible (WCAG 2.1 AA target) reader UI without a heavy component library fighting custom audio-sync UI.                                                                                                                                                                                                                                               |
+| **API layer**                | tRPC on Next.js API routes                                                                       | Typed client/server calls remove a class of bugs in progress/streak endpoints; no schema to hand-maintain against REST.                                                                                                                                                                                                                                                              |
+| **Database**                 | PostgreSQL                                                                                       | Relational fit for users, lessons, completions, known words, streaks — mostly joins and counts, not document-shaped data.                                                                                                                                                                                                                                                            |
+| **ORM**                      | Prisma                                                                                           | Typed schema/migrations matched to the TypeScript stack.                                                                                                                                                                                                                                                                                                                             |
+| **Object storage**           | Cloudflare R2 (S3-compatible)                                                                    | Audio files and cover art, kept out of the database and off the app server; no egress fees, which matters for audio-heavy traffic.                                                                                                                                                                                                                                                   |
+| **Auth**                     | Auth.js (NextAuth)                                                                               | Email/social login without a third-party vendor holding learner data — fits the private-by-default stance in PRD §11, and has no separate account/cost to stand up.                                                                                                                                                                                                                  |
+| **Content authoring**        | In-app admin panel (custom-built)                                                                | Content is the biggest production lift in the PRD's risk list, so authoring has to ship without a code deploy from day one. A minimal admin panel over the same Prisma schema is faster to build for MVP than integrating a CMS, and keeps content and app data in one database. Revisit a headless CMS (e.g. Sanity) only if a non-engineering content team scales up in Phase 2/3. |
+| **Word lookup / dictionary** | Self-hosted French↔English lexicon built from an open dataset (e.g. Wiktionary/FreeDict extract) | Keeps tap-to-translate instant and free of per-lookup API cost or a third-party dependency, and works with the offline-tolerant lesson flow required in PRD §11.                                                                                                                                                                                                                     |
+| **Lesson audio**             | Recorded human narration for MVP                                                                 | Pedagogical quality (natural pacing, real prosody) matters most at exactly the levels — A1 mini-stories — where the method concedes learners need the most scaffolding; TTS (e.g. ElevenLabs) is a Phase 2/3 option once content volume, not quality, is the bottleneck.                                                                                                             |
+| **Hosting**                  | Vercel                                                                                           | First-class Next.js support, easy preview deploys for content/UI review.                                                                                                                                                                                                                                                                                                             |
+| **Notifications**            | Web Push + a transactional email provider (Resend)                                               | Daily streak reminder; email as fallback/onboarding channel.                                                                                                                                                                                                                                                                                                                         |
+| **Analytics**                | PostHog (EU-hosted)                                                                              | Covers the PRD §10 metrics (retention, input hours, level-ups) without conflicting with the privacy stance in §11.                                                                                                                                                                                                                                                                   |
+| **Testing**                  | Vitest (unit) + Playwright (E2E on the reader/player and streak flows)                           | The reader's audio-text sync and streak logic are exactly the kind of behavior that regresses silently without E2E coverage.                                                                                                                                                                                                                                                         |
+| **CI/CD**                    | GitHub Actions → Vercel                                                                          | Test + typecheck on PR, deploy previews, deploy on merge to `master`.                                                                                                                                                                                                                                                                                                                |
 
 This is the confirmed MVP stack — treat it as the default for any scaffolding work, not something to re-litigate per task. Phase 2/3 additions (e.g. speech-to-text for spoken responses, a CMS) get decided when that work starts, not now.
 
@@ -81,6 +81,7 @@ This is the confirmed MVP stack — treat it as the default for any scaffolding 
 Accounts and local tooling needed to work on this project, per the stack confirmed in §3:
 
 ### Accounts / services
+
 - [ ] GitHub — already set up (`AiraDeCastro/learn-french-with-aira`)
 - [ ] Vercel — hosting + preview deploys
 - [ ] Postgres hosting — e.g. Neon or Supabase (managed, branchable for preview environments)
@@ -92,6 +93,7 @@ Accounts and local tooling needed to work on this project, per the stack confirm
 Auth.js and the in-app admin panel need no separate accounts — they run inside the app.
 
 ### Local development
+
 - [ ] Node.js (LTS) + npm/pnpm
 - [ ] Git
 - [ ] GitHub CLI (`gh`) — already configured
@@ -100,10 +102,11 @@ Auth.js and the in-app admin panel need no separate accounts — they run inside
 - [ ] Vercel CLI — env pulls, local preview parity
 
 ### Content production (once content work starts)
+
 - [ ] Audio recording/editing tool for mini-story narration (e.g. Audacity)
 - [ ] A forced-alignment tool (e.g. Aeneas or Whisper timestamps) to generate word/sentence-level timing for text-audio sync, unless timings are authored by hand
 - [ ] An open lexicon dataset (e.g. a Wiktionary/FreeDict extract) to seed the self-hosted word-lookup dictionary
 
 ---
 
-*Stack and tooling here are confirmed for the MVP scope in [PRD.md §13, Phase 1](PRD.md#13-phasing--milestones). Phase 2/3 work (import, speaking-activation) will need additional services — e.g. speech-to-text for spoken responses — decided when that work starts.*
+_Stack and tooling here are confirmed for the MVP scope in [PRD.md §13, Phase 1](PRD.md#13-phasing--milestones). Phase 2/3 work (import, speaking-activation) will need additional services — e.g. speech-to-text for spoken responses — decided when that work starts._

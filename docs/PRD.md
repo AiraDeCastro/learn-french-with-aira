@@ -5,7 +5,7 @@
 **Date:** 8 Sept 2026
 **Platform:** Web
 
-> A comprehensible-input app that takes a learner from their first *bonjour* to reading Camus and following French radio without subtitles — one streak at a time.
+> A comprehensible-input app that takes a learner from their first _bonjour_ to reading Camus and following French radio without subtitles — one streak at a time.
 
 ---
 
@@ -67,14 +67,14 @@ Aira's content strategy and level framework are adapted from the practical break
 
 Aira uses the CEFR scale (A1–C2), the same one the DELF/DALF French proficiency exams are built on, so a learner's in-app level maps to something recognized outside the app. **C2 is branded "Pro"** in-product: the tier where a learner engages with native French media the way a native speaker would.
 
-| Level | Stage | Comprehensible input examples |
-|---|---|---|
-| **A1** | Absolute beginner | Mini-stories built on 30–40 high-frequency words repeated across many short scenes; graded readers; bilingual (FR/EN) parallel texts; short audio clips with full transcripts |
-| **A2** | Elementary | Longer mini-story arcs; beginner graded readers without translation scaffolding; audio-with-transcript at natural-ish pace |
-| **B1** | Intermediate | Learner podcasts (slow, clear French with subtitles — à la Easy French); simplified news bulletins; French-dubbed or subtitled shows the learner already knows the plot of |
-| **B2** | Upper intermediate | Imported content — any YouTube video, article, or podcast episode the learner brings in; native news at normal speed; unfamiliar shows with FR subtitles |
-| **C1** | Advanced | French novels and nonfiction; native podcasts (history, culture, politics); audiobooks during passive listening |
-| **C2** | Pro | Live French radio (France Culture-style), films with no subtitles, dense literature — content chosen purely by interest, not level |
+| Level  | Stage              | Comprehensible input examples                                                                                                                                                 |
+| ------ | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **A1** | Absolute beginner  | Mini-stories built on 30–40 high-frequency words repeated across many short scenes; graded readers; bilingual (FR/EN) parallel texts; short audio clips with full transcripts |
+| **A2** | Elementary         | Longer mini-story arcs; beginner graded readers without translation scaffolding; audio-with-transcript at natural-ish pace                                                    |
+| **B1** | Intermediate       | Learner podcasts (slow, clear French with subtitles — à la Easy French); simplified news bulletins; French-dubbed or subtitled shows the learner already knows the plot of    |
+| **B2** | Upper intermediate | Imported content — any YouTube video, article, or podcast episode the learner brings in; native news at normal speed; unfamiliar shows with FR subtitles                      |
+| **C1** | Advanced           | French novels and nonfiction; native podcasts (history, culture, politics); audiobooks during passive listening                                                               |
+| **C2** | Pro                | Live French radio (France Culture-style), films with no subtitles, dense literature — content chosen purely by interest, not level                                            |
 
 ## 7. Core Features
 
@@ -121,14 +121,14 @@ A streak increments once per calendar day (learner's local timezone) the first t
 
 ## 10. Success Metrics
 
-| Metric | Target |
-|---|---|
-| D7 retention | ≥ 35% |
-| D30 retention | ≥ 18% |
-| Median streak | 10+ days |
-| Weekly input | 3+ hours (reading + listening) |
+| Metric              | Target                                                   |
+| ------------------- | -------------------------------------------------------- |
+| D7 retention        | ≥ 35%                                                    |
+| D30 retention       | ≥ 18%                                                    |
+| Median streak       | 10+ days                                                 |
+| Weekly input        | 3+ hours (reading + listening)                           |
 | Level-ups / quarter | 1 sub-level (e.g. A2 → B1) for a learner active 60+ days |
-| Lesson completion | ≥ 80% of started lessons reach the comprehension check |
+| Lesson completion   | ≥ 80% of started lessons reach the comprehension check   |
 
 ## 11. Non-Functional Requirements
 
@@ -150,18 +150,21 @@ A streak increments once per calendar day (learner's local timezone) the first t
 ## 13. Phasing & Milestones
 
 **Phase 1 — MVP**
+
 - A1–B1 content library (mini-stories, graded readers, learner podcasts)
 - Synced reader/player + tap-to-translate
 - Streaks, known-word tracker, progress dashboard
 - Basic placement quiz
 
 **Phase 2 — Extend upward**
+
 - B2–C1 native-adjacent content
 - Bring-your-own content import
 - Interest-based recommendations
 - Streak freeze + milestone rewards
 
 **Phase 3 — Reach Pro (C2)**
+
 - C2 native-media library (radio, film, literature)
 - Spaced word review
 - Speaking-activation prompts
@@ -177,4 +180,4 @@ A streak increments once per calendar day (learner's local timezone) the first t
 
 ---
 
-*Comprehensible-input level framework and content strategy (Sections 5–6) adapted from ["Comprehensible Input Examples and Strategies That Actually Work,"](https://blog.thelinguist.com/comprehensible-input-examples/) The Linguist Blog. Level naming follows the CEFR scale (A1–C2) used by the French DELF/DALF exams.*
+_Comprehensible-input level framework and content strategy (Sections 5–6) adapted from ["Comprehensible Input Examples and Strategies That Actually Work,"](https://blog.thelinguist.com/comprehensible-input-examples/) The Linguist Blog. Level naming follows the CEFR scale (A1–C2) used by the French DELF/DALF exams._
