@@ -3,11 +3,11 @@
 A comprehensible-input French learning web app: leveled content (CEFR A1–C2) plus daily streaks, taking a learner from zero French to native-level ("Pro").
 
 Full spec: [docs/PRD.md](docs/PRD.md) — read it before making product decisions this file doesn't cover.
-Architecture, stack, and tooling: [docs/PLANNING.md](docs/PLANNING.md) — a proposal, not yet confirmed (see below).
+Architecture, stack, and tooling: [docs/PLANNING.md](docs/PLANNING.md).
 
 ## Project status
 
-Pre-code. No app has been scaffolded yet and **no tech stack has been chosen**. [docs/PLANNING.md](docs/PLANNING.md) lays out a candidate stack (Next.js/TypeScript, Postgres+Prisma, Vercel, etc.) with reasoning, but it's a proposal — don't treat it as decided. Confirm with the user before scaffolding anything against it, and update this file once a stack is actually chosen.
+Pre-code. No app has been scaffolded yet, but the MVP tech stack is confirmed — see [docs/PLANNING.md §3](docs/PLANNING.md#3-technology-stack): Next.js + TypeScript, Tailwind, tRPC, PostgreSQL + Prisma, Cloudflare R2, Auth.js, Vercel. Use it as the default for any scaffolding work rather than re-deciding per task. Phase 2/3 additions (CMS, speech-to-text, etc.) aren't decided yet — flag those to the user when that work comes up.
 
 ## Product method — don't design against this
 

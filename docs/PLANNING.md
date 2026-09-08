@@ -1,6 +1,6 @@
 # Learn French with Aira — Planning
 
-Companion to [PRD.md](PRD.md). The PRD defines *what* and *why*; this document defines *how it's built*. Stack choices below are a proposed starting point, not yet locked in — revisit if the team or constraints change.
+Companion to [PRD.md](PRD.md). The PRD defines *what* and *why*; this document defines *how it's built*. The stack in §3 is confirmed for MVP (Phase 1 of [PRD.md §13](PRD.md#13-phasing--milestones)) — revisit before Phase 2/3 if scope or team constraints change.
 
 ---
 
@@ -60,34 +60,36 @@ Content rights matter here too: `Lesson` needs a `source_type` (in-house / licen
 | **Language** | TypeScript, end to end | One language across client/server/schema keeps the content and progress data model consistent and typo-proof between reader UI and API. |
 | **Frontend framework** | Next.js (React) | SSR for fast first-paint on the reader (important on mobile web, per PRD's responsive-web requirement), file-based routing, API routes co-located with the app for MVP simplicity. |
 | **Styling** | Tailwind CSS | Fast to build a consistent, accessible (WCAG 2.1 AA target) reader UI without a heavy component library fighting custom audio-sync UI. |
-| **API layer** | tRPC (or REST if the team prefers) on Next.js API routes | Typed client/server calls remove a class of bugs in progress/streak endpoints; REST is a fine fallback if multiple client types are added later. |
+| **API layer** | tRPC on Next.js API routes | Typed client/server calls remove a class of bugs in progress/streak endpoints; no schema to hand-maintain against REST. |
 | **Database** | PostgreSQL | Relational fit for users, lessons, completions, known words, streaks — mostly joins and counts, not document-shaped data. |
 | **ORM** | Prisma | Typed schema/migrations matched to the TypeScript stack. |
-| **Object storage** | S3-compatible (Cloudflare R2 or AWS S3) | Audio files and cover art; keep out of the database and off the app server. |
-| **Auth** | Auth.js (NextAuth) or Clerk | Email/social login; learner data is private-by-default (PRD §11), so auth needs to be solid but doesn't need to be custom-built. |
-| **Content authoring** | Headless CMS (e.g. Sanity) *or* an in-app admin panel | Content is the biggest production lift in the PRD's risk list — whichever is chosen, it must let non-engineers add/tag/level lessons without a code deploy. Start with a minimal in-app admin panel for MVP; move to a CMS if a non-engineering content team comes on. |
+| **Object storage** | Cloudflare R2 (S3-compatible) | Audio files and cover art, kept out of the database and off the app server; no egress fees, which matters for audio-heavy traffic. |
+| **Auth** | Auth.js (NextAuth) | Email/social login without a third-party vendor holding learner data — fits the private-by-default stance in PRD §11, and has no separate account/cost to stand up. |
+| **Content authoring** | In-app admin panel (custom-built) | Content is the biggest production lift in the PRD's risk list, so authoring has to ship without a code deploy from day one. A minimal admin panel over the same Prisma schema is faster to build for MVP than integrating a CMS, and keeps content and app data in one database. Revisit a headless CMS (e.g. Sanity) only if a non-engineering content team scales up in Phase 2/3. |
+| **Word lookup / dictionary** | Self-hosted French↔English lexicon built from an open dataset (e.g. Wiktionary/FreeDict extract) | Keeps tap-to-translate instant and free of per-lookup API cost or a third-party dependency, and works with the offline-tolerant lesson flow required in PRD §11. |
+| **Lesson audio** | Recorded human narration for MVP | Pedagogical quality (natural pacing, real prosody) matters most at exactly the levels — A1 mini-stories — where the method concedes learners need the most scaffolding; TTS (e.g. ElevenLabs) is a Phase 2/3 option once content volume, not quality, is the bottleneck. |
 | **Hosting** | Vercel | First-class Next.js support, easy preview deploys for content/UI review. |
-| **Notifications** | Web Push + a transactional email provider (e.g. Resend) | Daily streak reminder; email as fallback/onboarding channel. |
-| **Analytics** | Privacy-respecting product analytics (e.g. PostHog, self-hosted or EU-hosted) | Needed for the PRD §10 metrics (retention, input hours, level-ups) without conflicting with the privacy stance in §11. |
+| **Notifications** | Web Push + a transactional email provider (Resend) | Daily streak reminder; email as fallback/onboarding channel. |
+| **Analytics** | PostHog (EU-hosted) | Covers the PRD §10 metrics (retention, input hours, level-ups) without conflicting with the privacy stance in §11. |
 | **Testing** | Vitest (unit) + Playwright (E2E on the reader/player and streak flows) | The reader's audio-text sync and streak logic are exactly the kind of behavior that regresses silently without E2E coverage. |
 | **CI/CD** | GitHub Actions → Vercel | Test + typecheck on PR, deploy previews, deploy on merge to `master`. |
 
-**Not decided yet / explicitly deferred:** dictionary/lookup data source for tap-to-translate (build vs. license vs. API), text-to-speech vs. recorded-only audio for mini-stories, and the specific CMS vendor. Flag these to the user before committing engineering time.
+This is the confirmed MVP stack — treat it as the default for any scaffolding work, not something to re-litigate per task. Phase 2/3 additions (e.g. speech-to-text for spoken responses, a CMS) get decided when that work starts, not now.
 
 ## 4. Required Tools List
 
-Accounts and local tooling needed to work on this project, once the stack above is confirmed:
+Accounts and local tooling needed to work on this project, per the stack confirmed in §3:
 
 ### Accounts / services
 - [ ] GitHub — already set up (`AiraDeCastro/learn-french-with-aira`)
 - [ ] Vercel — hosting + preview deploys
 - [ ] Postgres hosting — e.g. Neon or Supabase (managed, branchable for preview environments)
-- [ ] S3-compatible object storage — e.g. Cloudflare R2 or AWS S3, for audio/transcripts
-- [ ] Auth provider — Auth.js needs no separate account; Clerk would need one
-- [ ] Headless CMS (if chosen over in-app admin) — e.g. Sanity
-- [ ] Transactional email — e.g. Resend, for streak-reminder and onboarding email
-- [ ] Product analytics — e.g. PostHog (EU-hosted or self-hosted, for privacy)
+- [ ] Cloudflare R2 — audio/transcript/cover-art storage
+- [ ] Resend — transactional email (streak reminders, onboarding)
+- [ ] PostHog (EU-hosted) — product analytics
 - [ ] Error tracking — e.g. Sentry
+
+Auth.js and the in-app admin panel need no separate accounts — they run inside the app.
 
 ### Local development
 - [ ] Node.js (LTS) + npm/pnpm
@@ -98,9 +100,10 @@ Accounts and local tooling needed to work on this project, once the stack above 
 - [ ] Vercel CLI — env pulls, local preview parity
 
 ### Content production (once content work starts)
-- [ ] Audio recording/editing tool for mini-story narration (e.g. Audacity) or a TTS pipeline, if that route is chosen
+- [ ] Audio recording/editing tool for mini-story narration (e.g. Audacity)
 - [ ] A forced-alignment tool (e.g. Aeneas or Whisper timestamps) to generate word/sentence-level timing for text-audio sync, unless timings are authored by hand
+- [ ] An open lexicon dataset (e.g. a Wiktionary/FreeDict extract) to seed the self-hosted word-lookup dictionary
 
 ---
 
-*Stack and tooling choices here support the MVP scope in [PRD.md §13, Phase 1](PRD.md#13-phasing--milestones). Revisit before starting Phase 2/3 work, since import (V2) and speaking-activation (V2) features may need additional services (e.g. speech-to-text for spoken responses).*
+*Stack and tooling here are confirmed for the MVP scope in [PRD.md §13, Phase 1](PRD.md#13-phasing--milestones). Phase 2/3 work (import, speaking-activation) will need additional services — e.g. speech-to-text for spoken responses — decided when that work starts.*
