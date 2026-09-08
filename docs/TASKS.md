@@ -8,7 +8,7 @@ Working checklist derived from [PRD.md](PRD.md) (scope) and [PLANNING.md](PLANNI
 
 Scaffolding per [PLANNING.md §3](PLANNING.md#3-technology-stack); nothing product-specific yet.
 
-- [ ] Init Next.js + TypeScript project, with Tailwind CSS configured
+- [x] Init Next.js + TypeScript project, with Tailwind CSS configured
 - [ ] Set up ESLint, Prettier, and TypeScript strict mode
 - [ ] Provision Postgres (Neon or Supabase) and connect Prisma
 - [ ] Set up tRPC router scaffolding (client + server)
