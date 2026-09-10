@@ -16,7 +16,11 @@
     "db:dev": "prisma dev",
     "db:push": "prisma db push",
     "db:generate": "prisma generate",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "audit:check": "node scripts/check-audit.mjs",
+    "deps:check": "npm ls",
+    "verify": "npm run format:check && npm run lint && npm run deps:check && npm run audit:check && npm run typecheck && npm run test && npm run build",
+    "prepare": "husky"
   },
   "dependencies": {
     "@prisma/client": "^7.10.0",
@@ -32,6 +36,8 @@
     "zod": "^4.5.4"
   },
   "devDependencies": {
+    "@commitlint/cli": "^21.2.2",
+    "@commitlint/config-conventional": "^21.2.2",
     "@playwright/test": "^1.63.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
@@ -42,6 +48,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.3.4",
     "eslint-config-prettier": "^10.1.8",
+    "husky": "^9.1.7",
     "prettier": "^3.9.6",
     "prisma": "^7.10.0",
     "tailwindcss": "^4",

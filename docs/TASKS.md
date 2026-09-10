@@ -20,6 +20,8 @@ Scaffolding per [PLANNING.md §3](PLANNING.md#3-technology-stack); nothing produ
 - [ ] Wire up PostHog (EU-hosted) analytics — blocked on a PostHog account being created
 - [x] Configure Vitest and Playwright test runners (empty smoke test passing)
 - [ ] Add a Playwright E2E job to CI (currently E2E only runs locally via `npm run test:e2e` — CI only runs the fast unit tests, to avoid a slow browser download on every push)
+- [x] Add a pre-commit gate (Husky): every commit runs format check, lint, dependency-tree check, a security-audit check, typecheck, unit tests, and a full production build — a commit is refused if any of these fail
+- [x] Enforce Conventional Commits via commitlint on the commit-msg hook
 
 ## M1 — Content Model & Admin Panel
 

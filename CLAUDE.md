@@ -15,6 +15,14 @@ Milestone checklist: [docs/TASKS.md](docs/TASKS.md).
 - **The user (Aira) is not a technical reader.** After finishing a milestone (or a meaningful chunk of one), explain what was done in plain language — what it means for the app, not implementation detail — organized per milestone, not as a wall of file names.
 - **Pause between milestones.** After wrapping up the milestone currently in progress, stop and wait for Aira to explicitly say to start the next one. Don't roll from one milestone into the next automatically.
 
+## Commit workflow
+
+- **Every commit is gated by Husky.** `.husky/pre-commit` runs `npm run verify` (format check → lint → dependency-tree check → security-audit check → typecheck → unit tests → full production build) and refuses the commit if anything fails. `.husky/commit-msg` runs commitlint and refuses a commit message that isn't [Conventional Commits](https://www.conventionalcommits.org/) format.
+- **Write commit messages as `<type>(<scope>): <subject>`** — e.g. `feat(reader): add tap-to-translate`, `fix(streak): correct timezone bug`, `chore(deps): bump prisma`. Standard types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`.
+- **If a change has no test covering it, write the test first**, then the change — don't commit code the pre-commit gate can't actually exercise.
+- **`npm audit` is gated through `scripts/check-audit.mjs`, not called directly.** It fails on any high/critical vulnerability that isn't on the file's reviewed allowlist (currently: advisories inside Prisma CLI's own MySQL-introspection dev tooling, which this Postgres-only project never touches). A genuinely new vulnerability still blocks the commit. Don't "fix" a failing audit by raising the severity threshold or deleting the check — either resolve it for real or add a dated, reasoned entry to the allowlist.
+- **The full gate is slow on purpose** (a production build runs on every commit) — that's the tradeoff Aira asked for in exchange for never pushing a broken build. Don't work around it with `--no-verify` unless Aira explicitly says to.
+
 ## Project status
 
 M0 (Project Foundations) is mostly done — see [docs/TASKS.md](docs/TASKS.md) for the exact checklist. What's left in M0 is entirely account-provisioning (hosted Postgres, Cloudflare R2, Vercel, Sentry, PostHog) that only Aira can do, since it means creating accounts on external services. Everything code-side is in place: Next.js + TypeScript + Tailwind, ESLint/Prettier, tRPC, Prisma (working against a local dev database), Auth.js (Google + email sign-in wired, needs real credentials to activate), GitHub Actions CI, and Vitest/Playwright test runners. Phase 2/3 additions (CMS, speech-to-text, etc.) aren't decided yet — flag those to the user when that work comes up.
@@ -32,6 +40,13 @@ M0 (Project Foundations) is mostly done — see [docs/TASKS.md](docs/TASKS.md) f
 - Completed the code-only parts of M0: scaffolded the Next.js app; added ESLint/Prettier/strict TypeScript; scaffolded tRPC end to end (a `health.ping` procedure proves client → server → back works, covered by a Vitest test); installed Prisma and verified it against a local database (Prisma's built-in `prisma dev` — no Docker, no account needed for local work); scaffolded Auth.js with Google + Resend-email sign-in (inactive until real credentials are added); added a GitHub Actions CI workflow (lint, format check, typecheck, unit tests, build) that runs on every push/PR; set up Vitest and Playwright with passing smoke tests.
 - Left unchecked, and blocked on Aira creating accounts: a hosted Postgres database (Neon/Supabase), a Cloudflare R2 bucket, a Vercel project, a Sentry project, and a PostHog project. Local development works without any of these.
 - Discovered and logged one follow-up task: wire Playwright E2E into CI (currently local-only, to avoid a slow browser download on every push).
+
+**2026-09-09 — Pre-commit standards + Conventional Commits**
+
+- Added a Husky pre-commit gate: every commit now runs format check, lint, a dependency-tree check (`npm ls`), a security-audit check, typecheck, unit tests, and a full `next build` — see the Commit workflow section above.
+- Wrote [scripts/check-audit.mjs](../scripts/check-audit.mjs): a small allowlist gate around `npm audit`, needed because npm's `--omit=dev` doesn't actually exclude devDependencies from the audit graph (a known npm limitation). Without it, the gate would permanently fail on 4 high-severity advisories that live entirely inside Prisma CLI's own bundled MySQL-introspection tooling (dev-only, unreachable — this project is Postgres-only), with no fix available short of downgrading Prisma two major versions. The script fails on anything high/critical that isn't explicitly allowlisted with a dated reason, so a real new vulnerability still blocks a commit.
+- Added commitlint + a `.husky/commit-msg` hook enforcing Conventional Commits on every commit message.
+- Added `.gitattributes` forcing LF line endings on `.husky/*` and `*.sh`, since Windows checkouts would otherwise convert them to CRLF and risk breaking the hook scripts.
 
 ## Product method — don't design against this
 
