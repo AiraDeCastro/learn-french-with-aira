@@ -20,7 +20,7 @@
     "db:seed": "prisma db seed",
     "audit:check": "node scripts/check-audit.mjs",
     "deps:check": "npm ls",
-    "verify": "npm run format:check && npm run lint && npm run deps:check && npm run audit:check && npm run typecheck && npm run db:generate && npm run db:push && npm run db:seed && npm run test && npm run build",
+    "verify": "npm run format:check && npm run lint && npm run deps:check && npm run audit:check && npm run db:generate && npm run db:push && npm run db:seed && npm run typecheck && npm run test && npm run build",
     "prepare": "husky"
   },
   "dependencies": {

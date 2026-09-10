@@ -51,9 +51,6 @@ jobs:
       - name: Security audit
         run: npm run audit:check
 
-      - name: Typecheck
-        run: npm run typecheck
-
       - name: Generate Prisma client
         run: npm run db:generate
 
@@ -62,6 +59,9 @@ jobs:
 
       - name: Seed database
         run: npm run db:seed
+
+      - name: Typecheck
+        run: npm run typecheck
 
       - name: Unit tests
         run: npm run test
