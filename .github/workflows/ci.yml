@@ -10,6 +10,24 @@ jobs:
   check:
     name: Verify (mirrors the local pre-commit gate)
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: aira_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    env:
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/aira_ci?sslmode=disable
+      # Not a real secret — just satisfies Auth.js's "must be set" check at build/test time.
+      AUTH_SECRET: ci-only-placeholder-not-a-real-secret
     steps:
       - uses: actions/checkout@v4
 
@@ -38,6 +56,12 @@ jobs:
 
       - name: Generate Prisma client
         run: npm run db:generate
+
+      - name: Push database schema
+        run: npm run db:push
+
+      - name: Seed database
+        run: npm run db:seed
 
       - name: Unit tests
         run: npm run test

@@ -27,13 +27,14 @@ Scaffolding per [PLANNING.md §3](PLANNING.md#3-technology-stack); nothing produ
 
 The library is the product (PLANNING.md §1) — content tooling comes before learner-facing UI.
 
-- [ ] Design Prisma schema: `User`, `Lesson`, `LessonCompletion`, `KnownWord`, `Streak`, `LevelEstimate`
-- [ ] Add `Lesson.level` (A1–C2), `Lesson.type` (mini-story / graded reader / podcast / news / imported), `Lesson.topicTags`
-- [ ] Add `Lesson.sourceType` (in-house / licensed / imported) per the content-rights requirement (PRD §11)
-- [ ] Build in-app admin panel: create/edit a lesson, set level + topic tags, upload audio + transcript, upload cover art
-- [ ] Build transcript-timing input in the admin panel (word/sentence timestamps, hand-entered or via forced-alignment output)
-- [ ] Write and record the first A1 mini-story set (30–40 high-frequency words, per PRD §6) — enough lessons to support a real onboarding flow, not placeholders
-- [ ] Seed the self-hosted lexicon from an open dataset (Wiktionary/FreeDict extract) for word lookup
+- [x] Design Prisma schema: `User`, `Lesson`, `LessonCompletion`, `KnownWord`, `Streak`, `LevelEstimate` — also added `TranscriptSegment`, `ComprehensionQuestion`, and `LexiconEntry`, which the sketch in PLANNING.md didn't spell out but M1/M2 need concretely
+- [x] Add `Lesson.level` (A1–C2), `Lesson.type` (mini-story / graded reader / podcast / news / imported), `Lesson.topicTags`
+- [x] Add `Lesson.sourceType` (in-house / licensed / imported) per the content-rights requirement (PRD §11)
+- [x] Build in-app admin panel: create/edit a lesson, set level + topic tags, upload audio + transcript, upload cover art — file uploads go to local disk for now (`src/server/storage.ts`), a stand-in for Cloudflare R2 until that account exists; **no access control yet, see follow-up below**
+- [x] Build transcript-timing input in the admin panel (word/sentence timestamps, hand-entered or via forced-alignment output) — hand-entered rows in the admin form; a forced-alignment pipeline is a later addition once real audio exists
+- [ ] Write and record the first A1 mini-story set (30–40 high-frequency words, per PRD §6) — **partially done:** wrote and seeded 4 real mini-stories (`prisma/seed.ts`) using a repeated ~70-word vocabulary, each with comprehension questions; **recording real audio narration is blocked** — it needs an actual human voice, which isn't something that can be produced in code (PLANNING.md §3 ruled out TTS for MVP quality reasons)
+- [ ] Seed the self-hosted lexicon from an open dataset (Wiktionary/FreeDict extract) for word lookup — **partially done:** built the lookup infrastructure (`LexiconEntry` model + `lexicon.lookup` tRPC procedure) and seeded 72 hand-curated, verified entries covering the mini-story vocabulary; bulk-importing a full open dataset is still open — investigated FreeDict, its distributions are in formats (TEI XML / StarDict binary) that need a real parsing effort, not a quick fetch
+- [ ] Add authentication/access control in front of `/admin/*` and the `/api/admin/upload` route before this is shown to anyone but Aira (discovered while building the admin panel — currently anyone with the URL can create/edit/delete lessons)
 
 ## M2 — Reader/Player Core
 

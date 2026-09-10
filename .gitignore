@@ -48,3 +48,6 @@ next-env.d.ts
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+
+# local media storage (stand-in for Cloudflare R2 — see src/server/storage.ts)
+/storage/

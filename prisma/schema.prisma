@@ -1,8 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
@@ -10,4 +8,162 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+/// CEFR scale, matching the French DELF/DALF exam levels (docs/PRD.md §6). C2 is branded "Pro" in the product, not in the data.
+enum Level {
+  A1
+  A2
+  B1
+  B2
+  C1
+  C2
+}
+
+enum LessonType {
+  MINI_STORY
+  GRADED_READER
+  PODCAST
+  NEWS
+  IMPORTED
+}
+
+/// Content-rights tracking per docs/PRD.md §11 — every lesson must be able to show where it's allowed to be shown.
+enum SourceType {
+  IN_HOUSE
+  LICENSED
+  IMPORTED
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  createdAt DateTime @default(now())
+
+  completions   LessonCompletion[]
+  knownWords    KnownWord[]
+  streak        Streak?
+  levelEstimate LevelEstimate?
+
+  @@map("users")
+}
+
+model Lesson {
+  id            String     @id @default(cuid())
+  title         String
+  level         Level
+  type          LessonType
+  /// In-house/licensed/imported — imported lessons are scoped to one learner, never shared (PRD §11, §13 Phase 2).
+  sourceType    SourceType @default(IN_HOUSE)
+  topicTags     String[]   @default([])
+  /// Full French text of the lesson.
+  bodyText      String
+  /// English translation — used for the bilingual scaffolding A1 needs (PRD §5, §6).
+  translation   String?
+  /// Null until a real human narration exists (PLANNING.md §3: recorded narration, not TTS, for MVP).
+  audioUrl      String?
+  coverImageUrl String?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  segments    TranscriptSegment[]
+  questions   ComprehensionQuestion[]
+  completions LessonCompletion[]
+
+  @@index([level, type])
+  @@map("lessons")
+}
+
+/// One sentence/phrase of a lesson's transcript, in reading order. Timings stay null until the lesson has real audio to sync against (M2's reader needs this to highlight along with playback).
+model TranscriptSegment {
+  id       String  @id @default(cuid())
+  lesson   Lesson  @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  lessonId String
+  order    Int
+  startMs  Int?
+  endMs    Int?
+  text     String
+
+  @@unique([lessonId, order])
+  @@map("transcript_segments")
+}
+
+model ComprehensionQuestion {
+  id           String   @id @default(cuid())
+  lesson       Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  lessonId     String
+  order        Int      @default(0)
+  prompt       String
+  choices      String[]
+  correctIndex Int
+
+  @@unique([lessonId, order])
+  @@map("comprehension_questions")
+}
+
+/// A completed lesson is what extends a streak (PRD §8) — recorded server-side so it can't be spoofed client-side (PLANNING.md §2.2).
+model LessonCompletion {
+  id          String   @id @default(cuid())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  lesson      Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  lessonId    String
+  completedAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([lessonId])
+  @@map("lesson_completions")
+}
+
+/// A word the learner looked up or marked known. The running count is a core progress signal (CLAUDE.md domain vocabulary), tracked independently of lessons completed.
+model KnownWord {
+  id             String   @id @default(cuid())
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId         String
+  word           String
+  firstSeenAt    DateTime @default(now())
+  lastSeenAt     DateTime @default(now())
+  sourceLessonId String?
+
+  @@unique([userId, word])
+  @@map("known_words")
+}
+
+model Streak {
+  id             String    @id @default(cuid())
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId         String    @unique
+  currentCount   Int       @default(0)
+  /// One earned per active week (PRD §8), spent automatically to cover a missed day.
+  freezeBalance  Int       @default(0)
+  lastActiveDate DateTime?
+
+  @@map("streaks")
+}
+
+/// Directional only — never presented to the learner as a certified CEFR score (PRD §12, CLAUDE.md guardrails).
+model LevelEstimate {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String   @unique
+  level     Level
+  basis     String?
+  updatedAt DateTime @updatedAt
+
+  @@map("level_estimates")
+}
+
+/// Self-hosted word-lookup dictionary (PLANNING.md §3) backing tap-to-translate — deliberately not a third-party API, so lookup stays instant and offline-tolerant.
+model LexiconEntry {
+  id            String  @id @default(cuid())
+  headword      String
+  language      String  @default("fr")
+  definition    String
+  partOfSpeech  String?
+  /// Where this entry came from — lets a future bulk import be told apart from hand-curated seed entries.
+  sourceDataset String  @default("hand-curated")
+
+  @@unique([headword, language])
+  @@map("lexicon_entries")
 }

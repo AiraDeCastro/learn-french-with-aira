@@ -1,13 +1,14 @@
 import { initTRPC } from "@trpc/server";
 import superjson from "superjson";
+import { db } from "@/server/db";
 
 /**
- * Per-request context. Empty for now — auth (Auth.js session) gets added
- * here once M0's Auth.js task lands, and every procedure below will have
- * access to it without changing its own signature.
+ * Per-request context. Auth (Auth.js session) gets added here once a real
+ * session exists to read — every procedure below will pick it up without
+ * changing its own signature.
  */
 export function createTRPCContext() {
-  return {};
+  return { db };
 }
 
 const t = initTRPC.context<typeof createTRPCContext>().create({
