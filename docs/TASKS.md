@@ -40,13 +40,15 @@ The library is the product (PLANNING.md §1) — content tooling comes before le
 
 The core learner interaction (PLANNING.md §2.2).
 
-- [ ] Build the synced text+audio reader: sentence highlights in time with playback
-- [ ] Build playback controls (play/pause, scrub, speed) accessible via keyboard
-- [ ] Build tap-to-translate: inline definition popover on any word, no navigation away from the lesson
-- [ ] Wire word taps to save into `KnownWord` (first-seen/last-seen, source lesson)
-- [ ] Add a comprehension check (few questions) at the end of each lesson
-- [ ] Add local queueing for lesson progress and word-saves so a dropped connection mid-lesson doesn't lose data (PRD §11), syncing on reconnect
-- [ ] Accessibility pass on the reader: captions/transcript always visible, adjustable text size, WCAG 2.1 AA contrast
+- [x] Build the synced text+audio reader: sentence highlights in time with playback — logic is in place (`Reader.tsx` matches `audio.currentTime` against each segment's `startMs`/`endMs`) but **unverified with real audio**, since no lesson has narration yet; re-check once the first real recording lands
+- [x] Build playback controls (play/pause, scrub, speed) accessible via keyboard — native `<audio controls>` (play/pause/scrub) plus a speed `<select>`; both natively keyboard-operable
+- [x] Build tap-to-translate: inline definition popover on any word, no navigation away from the lesson — tested live in-browser
+- [x] Wire word taps to save into `KnownWord` (first-seen/last-seen, source lesson) — tested live and confirmed in the database
+- [x] Add a comprehension check (few questions) at the end of each lesson — tested live, scores correctly and records `LessonCompletion`
+- [x] Add local queueing for lesson progress and word-saves so a dropped connection mid-lesson doesn't lose data (PRD §11), syncing on reconnect — tested by simulating a failed request, confirming the queue entry, then confirming it flushes and lands in the database on reconnect
+- [x] Accessibility pass on the reader: captions/transcript always visible, adjustable text size, WCAG 2.1 AA contrast — semantic HTML throughout, transcript text is always rendered (never hidden behind a toggle), A-/A+ text-size control added; this is the lighter M2-scoped pass, **not** the full audit (that's M5's job)
+- [ ] Add a Playwright E2E test for the reader flow (read → tap-to-translate → answer quiz → complete) once M2's UI stabilizes — currently only manually verified in-browser
+- [ ] Replace the local-dev-user fallback in `src/server/current-user.ts` with the real Auth.js session once M4 wires up sign-in with real credentials (noted again here so it isn't missed — the fallback is already hard-disabled in production)
 
 ## M3 — Progress, Streaks & Levels
 

@@ -9,7 +9,7 @@ import { db } from "@/server/db";
  * the local dev DB both provide.
  */
 describe("lessonRouter", () => {
-  const caller = appRouter.createCaller({ db });
+  const caller = appRouter.createCaller({ db, userId: null });
   const createdIds: string[] = [];
 
   afterAll(async () => {

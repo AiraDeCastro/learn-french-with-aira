@@ -3,7 +3,7 @@ import { appRouter } from "@/server/api/root";
 import { db } from "@/server/db";
 
 describe("lexiconRouter", () => {
-  const caller = appRouter.createCaller({ db });
+  const caller = appRouter.createCaller({ db, userId: null });
 
   it("looks up a seeded word case-insensitively", async () => {
     const result = await caller.lexicon.lookup({ word: "Chat" });

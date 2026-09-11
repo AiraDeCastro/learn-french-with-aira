@@ -35,12 +35,20 @@ export default function LessonsPage() {
                 {!lesson.audioUrl && " · no audio yet"}
               </p>
             </div>
-            <Link
-              href={`/admin/lessons/${lesson.id}/edit`}
-              className="text-sm font-medium text-blue-600 hover:underline"
-            >
-              Edit
-            </Link>
+            <div className="flex gap-4">
+              <Link
+                href={`/learn/${lesson.id}`}
+                className="text-sm font-medium text-green-700 hover:underline dark:text-green-400"
+              >
+                Read
+              </Link>
+              <Link
+                href={`/admin/lessons/${lesson.id}/edit`}
+                className="text-sm font-medium text-blue-600 hover:underline"
+              >
+                Edit
+              </Link>
+            </div>
           </li>
         ))}
       </ul>
