@@ -4,7 +4,12 @@ export type QueuedAction =
   | { type: "saveWord"; payload: { word: string; lessonId?: string }; queuedAt: number }
   | {
       type: "completeLesson";
-      payload: { lessonId: string; answers: number[] };
+      payload: {
+        lessonId: string;
+        answers: number[];
+        durationSeconds: number;
+        timezone?: string;
+      };
       queuedAt: number;
     };
 

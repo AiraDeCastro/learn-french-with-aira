@@ -54,13 +54,14 @@ The core learner interaction (PLANNING.md §2.2).
 
 Server-authoritative per PLANNING.md §2.2 — computed on lesson completion, not client state.
 
-- [ ] Implement server-side streak increment on lesson completion (one per calendar day, learner's local timezone)
-- [ ] Implement streak freeze (earn one per active week, auto-applied to cover a missed day)
-- [ ] Implement known-words aggregation and hours-of-input tracking
-- [ ] Implement level-estimate heuristic (known-word count + levels of content completed comfortably)
-- [ ] Build the placement quiz (short reading/listening check, or "starting from zero") for onboarding
-- [ ] Build the progress dashboard: streak, current level, known-word count, hours of input
-- [ ] Add streak milestone markers at 7 days (30/100/365 land in M6, once milestone rewards are in scope)
+- [x] Implement server-side streak increment on lesson completion (one per calendar day, learner's local timezone) — pure date-math logic in `src/server/streak.ts`, timezone captured opportunistically from the browser on each lesson completion (`User.timezone`), defaults to UTC until first captured
+- [x] Implement streak freeze (earn one per active week, auto-applied to cover a missed day) — one freeze earned per 7 consecutive active days, consumed automatically to cover exactly one missed day; a gap larger than that still breaks the streak even with freezes banked
+- [x] Implement known-words aggregation and hours-of-input tracking — known-word count is a straight `KnownWord` count; hours of input sums a client-reported `durationSeconds` per `LessonCompletion` (an honest proxy, not precise attention tracking)
+- [x] Implement level-estimate heuristic (known-word count + levels of content completed comfortably) — `src/server/level-estimate.ts`; word-count thresholds combined with "completed ≥2 lessons at a level". **Follow-up caught and fixed during testing:** an ordinary lesson completion was silently overwriting a placement-quiz result downward (e.g. quiz sets A2, next A1 lesson completion recomputed it back to A1) — fixed so a completion's heuristic result can only raise the estimate (`maxLevel`), never lower one already set; only a fresh placement-quiz attempt can lower it
+- [x] Build the placement quiz (short reading/listening check, or "starting from zero") for onboarding — `/placement`; **deliberately scoped to A1/A2 only** since the library only has A1 content seeded so far — sorting into B1+ would be assessing against content that doesn't exist yet. Extend once higher-level content exists
+- [x] Build the progress dashboard: streak, current level, known-word count, hours of input — `/dashboard`
+- [x] Add streak milestone markers at 7 days (30/100/365 land in M6, once milestone rewards are in scope) — shown on the reader's lesson-complete screen via `hitSevenDayMilestone`
+- [ ] Extend the placement quiz beyond A1/A2 once B1+ content exists in the library (discovered while scoping M3 — see the note above)
 
 ## M4 — Onboarding & Daily Loop
 

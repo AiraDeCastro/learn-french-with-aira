@@ -26,15 +26,28 @@ type LessonData = {
 
 const FONT_SCALES = [1, 1.15, 1.3] as const;
 
+type CompletionResult = {
+  correctCount: number;
+  total: number;
+  streak?: {
+    currentCount: number;
+    freezeEarned: boolean;
+    hitSevenDayMilestone: boolean;
+  };
+};
+
 export function Reader({ lesson }: { lesson: LessonData }) {
   const [showTranslation, setShowTranslation] = useState(false);
   const [fontScaleIndex, setFontScaleIndex] = useState(0);
   const [activeSegmentId, setActiveSegmentId] = useState<string | null>(null);
-  const [result, setResult] = useState<{ correctCount: number; total: number } | null>(
-    null,
-  );
+  const [result, setResult] = useState<CompletionResult | null>(null);
   const [pendingCount, setPendingCount] = useState(0);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const startedAtRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    startedAtRef.current = Date.now();
+  }, []);
 
   const saveWordMutation = api.progress.saveWord.useMutation();
   const completeLessonMutation = api.progress.completeLesson.useMutation();
@@ -86,14 +99,19 @@ export function Reader({ lesson }: { lesson: LessonData }) {
   }, []);
 
   function handleQuizSubmit(answers: number[]) {
+    const durationSeconds = Math.round(
+      (Date.now() - (startedAtRef.current ?? Date.now())) / 1000,
+    );
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
     completeLessonMutation.mutate(
-      { lessonId: lesson.id, answers },
+      { lessonId: lesson.id, answers, durationSeconds, timezone },
       {
         onSuccess: (data) => setResult(data),
         onError: () => {
           enqueue({
             type: "completeLesson",
-            payload: { lessonId: lesson.id, answers },
+            payload: { lessonId: lesson.id, answers, durationSeconds, timezone },
             queuedAt: Date.now(),
           });
           setPendingCount((c) => c + 1);
@@ -237,9 +255,26 @@ export function Reader({ lesson }: { lesson: LessonData }) {
               Lesson finished — your answers will be scored once you&apos;re back online.
             </p>
           ) : (
-            <p>
-              Lesson complete! You got {result.correctCount} of {result.total} right.
-            </p>
+            <>
+              <p>
+                Lesson complete! You got {result.correctCount} of {result.total} right.
+              </p>
+              {result.streak && (
+                <p className="mt-2">
+                  🔥 {result.streak.currentCount}-day streak
+                  {result.streak.freezeEarned && " — you earned a streak freeze!"}
+                </p>
+              )}
+              {result.streak?.hitSevenDayMilestone && (
+                <p className="mt-2 font-medium">🎉 One week in a row — keep it up!</p>
+              )}
+              <a
+                href="/dashboard"
+                className="mt-3 inline-block text-sm font-medium underline"
+              >
+                View your progress
+              </a>
+            </>
           )}
         </section>
       )}
