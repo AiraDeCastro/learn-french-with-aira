@@ -237,3 +237,75 @@ describe("level estimate does not regress on an ordinary lesson completion", () 
     expect(completionResult.levelEstimate.level).toBe("A2");
   });
 });
+
+describe("recommendNextLesson", () => {
+  const TEST_EMAIL = "recommend-test@aira.test";
+  let userId: string;
+  const createdLessonIds: string[] = [];
+
+  beforeAll(async () => {
+    const user = await db.user.upsert({
+      where: { email: TEST_EMAIL },
+      update: { interests: ["cooking"] },
+      create: { email: TEST_EMAIL, interests: ["cooking"] },
+    });
+    userId = user.id;
+  });
+
+  afterAll(async () => {
+    await db.lessonCompletion.deleteMany({
+      where: { lessonId: { in: createdLessonIds } },
+    });
+    await db.lesson.deleteMany({ where: { id: { in: createdLessonIds } } });
+    await db.user.delete({ where: { id: userId } });
+  });
+
+  it("prefers a lesson matching both level and interest", async () => {
+    const caller = appRouter.createCaller({ db, userId });
+
+    // Level B2 rather than A1: the seeded library (prisma/seed.ts) is all
+    // A1, and recommendNextLesson's level-only fallback would otherwise
+    // pick up one of those real lessons instead of this test's own data.
+    const plain = await caller.lesson.create({
+      title: "Recommend test — no matching topic",
+      level: "B2",
+      type: "MINI_STORY",
+      bodyText: "Bonjour.",
+      segments: [],
+      questions: [],
+    });
+    createdLessonIds.push(plain.id);
+
+    const matching = await caller.lesson.create({
+      title: "Recommend test — matching topic",
+      level: "B2",
+      type: "MINI_STORY",
+      topicTags: ["cooking"],
+      bodyText: "Bonjour.",
+      segments: [],
+      questions: [],
+    });
+    createdLessonIds.push(matching.id);
+
+    await db.levelEstimate.upsert({
+      where: { userId },
+      update: { level: "B2", basis: "test setup" },
+      create: { userId, level: "B2", basis: "test setup" },
+    });
+
+    const recommended = await caller.progress.recommendNextLesson();
+    expect(recommended?.id).toBe(matching.id);
+  });
+
+  it("falls back to level-only once the interest match is completed", async () => {
+    const caller = appRouter.createCaller({ db, userId });
+
+    const matching = await db.lesson.findFirstOrThrow({
+      where: { title: "Recommend test — matching topic" },
+    });
+    await caller.progress.completeLesson({ lessonId: matching.id, answers: [] });
+
+    const recommended = await caller.progress.recommendNextLesson();
+    expect(recommended?.title).toBe("Recommend test — no matching topic");
+  });
+});

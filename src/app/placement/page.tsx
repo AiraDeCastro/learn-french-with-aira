@@ -6,12 +6,18 @@ import { api } from "@/trpc/react";
 
 export default function PlacementPage() {
   const router = useRouter();
+  const utils = api.useUtils();
   const { data: questions, isLoading } = api.placement.getQuestions.useQuery();
   const [answers, setAnswers] = useState<(number | null)[]>([]);
   const [started, setStarted] = useState(false);
 
   const submit = api.placement.submit.useMutation({
-    onSuccess: () => router.push("/dashboard"),
+    onSuccess: async () => {
+      // Land the learner in their first lesson same-session (PRD §9) rather
+      // than a dashboard they haven't earned any progress to look at yet.
+      const lesson = await utils.progress.recommendNextLesson.fetch();
+      router.push(lesson ? `/learn/${lesson.id}` : "/dashboard");
+    },
   });
 
   if (isLoading || !questions) {

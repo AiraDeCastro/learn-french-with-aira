@@ -142,15 +142,13 @@ export const progressRouter = createTRPCRouter({
     if (!ctx.userId) throw new TRPCError({ code: "UNAUTHORIZED" });
     const userId = ctx.userId;
 
-    const [streak, levelEstimate, knownWordCount, completions] = await Promise.all([
-      ctx.db.streak.findUnique({ where: { userId } }),
-      ctx.db.levelEstimate.findUnique({ where: { userId } }),
-      ctx.db.knownWord.count({ where: { userId } }),
-      ctx.db.lessonCompletion.findMany({
-        where: { userId },
-        select: { durationSeconds: true },
-      }),
-    ]);
+    const streak = await ctx.db.streak.findUnique({ where: { userId } });
+    const levelEstimate = await ctx.db.levelEstimate.findUnique({ where: { userId } });
+    const knownWordCount = await ctx.db.knownWord.count({ where: { userId } });
+    const completions = await ctx.db.lessonCompletion.findMany({
+      where: { userId },
+      select: { durationSeconds: true },
+    });
 
     const totalSeconds = completions.reduce((sum, c) => sum + c.durationSeconds, 0);
 
@@ -160,5 +158,49 @@ export const progressRouter = createTRPCRouter({
       knownWordCount,
       hoursOfInput: totalSeconds / 3600,
     };
+  }),
+
+  /**
+   * Picks "one recommended lesson at the learner's level and interests, no
+   * browsing required" (PRD §7 home-screen requirement). Falls back in
+   * stages — interest+level match, then level-only, then anything
+   * uncompleted, then anything at all — since a new library can't always
+   * satisfy the ideal match.
+   */
+  recommendNextLesson: publicProcedure.query(async ({ ctx }) => {
+    if (!ctx.userId) throw new TRPCError({ code: "UNAUTHORIZED" });
+    const userId = ctx.userId;
+
+    const [user, levelEstimate, completions] = await Promise.all([
+      ctx.db.user.findUniqueOrThrow({ where: { id: userId } }),
+      ctx.db.levelEstimate.findUnique({ where: { userId } }),
+      ctx.db.lessonCompletion.findMany({ where: { userId }, select: { lessonId: true } }),
+    ]);
+    const level = levelEstimate?.level ?? "A1";
+    const completedIds = completions.map((c) => c.lessonId);
+    const notCompleted = { id: { notIn: completedIds } };
+
+    const byLevelAndInterest =
+      user.interests.length > 0
+        ? await ctx.db.lesson.findFirst({
+            where: { level, topicTags: { hasSome: user.interests }, ...notCompleted },
+            orderBy: { createdAt: "asc" },
+          })
+        : null;
+    if (byLevelAndInterest) return byLevelAndInterest;
+
+    const byLevel = await ctx.db.lesson.findFirst({
+      where: { level, ...notCompleted },
+      orderBy: { createdAt: "asc" },
+    });
+    if (byLevel) return byLevel;
+
+    const anyNotCompleted = await ctx.db.lesson.findFirst({
+      where: notCompleted,
+      orderBy: { createdAt: "asc" },
+    });
+    if (anyNotCompleted) return anyNotCompleted;
+
+    return ctx.db.lesson.findFirst({ orderBy: { createdAt: "asc" } });
   }),
 });

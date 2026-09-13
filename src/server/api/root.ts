@@ -4,6 +4,8 @@ import { lessonRouter } from "@/server/api/routers/lesson";
 import { lexiconRouter } from "@/server/api/routers/lexicon";
 import { progressRouter } from "@/server/api/routers/progress";
 import { placementRouter } from "@/server/api/routers/placement";
+import { onboardingRouter } from "@/server/api/routers/onboarding";
+import { notificationsRouter } from "@/server/api/routers/notifications";
 
 export const appRouter = createTRPCRouter({
   health: healthRouter,
@@ -11,6 +13,8 @@ export const appRouter = createTRPCRouter({
   lexicon: lexiconRouter,
   progress: progressRouter,
   placement: placementRouter,
+  onboarding: onboardingRouter,
+  notifications: notificationsRouter,
 });
 
 export type AppRouter = typeof appRouter;

@@ -67,12 +67,13 @@ Server-authoritative per PLANNING.md §2.2 — computed on lesson completion, no
 
 Ties M1–M3 together into the flows in PRD §9.
 
-- [ ] Build signup/login flow on Auth.js
-- [ ] Build onboarding: goal selection + 2–3 interest topics
-- [ ] Wire onboarding into the placement quiz (M3) and land the learner in their first lesson same-session
-- [ ] Build the home screen: one recommended lesson at the learner's level + interests, no browsing required
-- [ ] Build the "browse library" view (by level, by topic) for learners who want to go off-path
-- [ ] Implement the daily reminder: Web Push primary, email (Resend) fallback, timed to the learner's usual practice window
+- [ ] Build signup/login flow on Auth.js — **partially done:** `/signin` page, session provider, and nav sign-in/out state are all built and tested live; still blocked on real Google OAuth + Resend credentials (same blocker as M0) before anyone can actually sign in
+- [x] Build onboarding: goal selection + 2–3 interest topics — `/onboarding`; interests are pulled live from real lesson topic tags (`lesson.listTopics`) rather than a hardcoded list, so they can't drift from actual content
+- [x] Wire onboarding into the placement quiz (M3) and land the learner in their first lesson same-session — placement now redirects straight into the recommended lesson via `progress.recommendNextLesson` instead of the dashboard; tested live end-to-end (onboarding → placement → landed in an interest-matched lesson)
+- [x] Build the home screen: one recommended lesson at the learner's level + interests, no browsing required — `/` branches on onboarding status; tested live, including the fallback from an interest+level match to a level-only match once the matching lesson was completed
+- [x] Build the "browse library" view (by level, by topic) for learners who want to go off-path — `/library`, filterable by both, tested live
+- [ ] Implement the daily reminder: Web Push primary, email (Resend) fallback, timed to the learner's usual practice window — **partially done:** Web Push subscription capture, a reminder-hour setting, and a manually-triggered send script (`npm run reminders:send`) are all built and tested (subscription flow verified up to the browser's own permission-grant prompt, which can't be automated); actually sending on a schedule needs a deployed cron trigger (blocked on Vercel, same as M0), and the Resend email fallback is scaffolded but inactive without real credentials
+- [ ] Extend the placement quiz and recommendation logic once B2+ content exists, so `recommendNextLesson`'s interest-matching has more than one level to work with (noted alongside the existing M3 placement-quiz follow-up)
 
 ## M5 — MVP Launch Readiness
 

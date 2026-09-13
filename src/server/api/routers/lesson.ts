@@ -52,6 +52,16 @@ export const lessonRouter = createTRPCRouter({
     }),
   ),
 
+  /** Distinct topic tags in use, for the onboarding interest picker and the library filter — derived from real content instead of a hardcoded list that would drift. */
+  listTopics: publicProcedure.query(async ({ ctx }) => {
+    const lessons = await ctx.db.lesson.findMany({ select: { topicTags: true } });
+    const topics = new Set<string>();
+    for (const lesson of lessons) {
+      for (const tag of lesson.topicTags) topics.add(tag);
+    }
+    return Array.from(topics).sort();
+  }),
+
   getById: publicProcedure.input(z.object({ id: z.string() })).query(({ ctx, input }) =>
     ctx.db.lesson.findUniqueOrThrow({
       where: { id: input.id },

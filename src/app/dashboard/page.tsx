@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { api } from "@/trpc/react";
+import { ReminderSettings } from "./_components/ReminderSettings";
 
 function StatCard({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
@@ -63,6 +64,8 @@ export default function DashboardPage() {
           , or just start reading — your level updates automatically as you go.
         </p>
       )}
+
+      <ReminderSettings />
 
       <Link
         href="/admin/lessons"

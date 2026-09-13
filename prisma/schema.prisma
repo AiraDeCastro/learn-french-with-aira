@@ -46,10 +46,23 @@ model User {
   timezone  String?
   createdAt DateTime @default(now())
 
-  completions   LessonCompletion[]
-  knownWords    KnownWord[]
-  streak        Streak?
-  levelEstimate LevelEstimate?
+  /// Onboarding (PRD §9): why the learner is here — free-form for now
+  /// ("travel", "heritage", "work", "media"), not an enum, since the PRD
+  /// treats these as example prompts rather than a fixed taxonomy.
+  goal      String?
+  /// 2-3 topics picked at onboarding, matched against Lesson.topicTags to
+  /// pick a recommended next lesson. Null goal means onboarding hasn't run.
+  interests String[] @default([])
+  /// Local hour (0-23, in `timezone` above) the learner wants their daily
+  /// reminder — "timed to the learner's usual practice window" (PRD §7).
+  /// Null until they set one; the reminder can't fire without it.
+  reminderHour Int?
+
+  completions       LessonCompletion[]
+  knownWords        KnownWord[]
+  streak            Streak?
+  levelEstimate     LevelEstimate?
+  pushSubscriptions PushSubscription[]
 
   @@map("users")
 }
@@ -179,4 +192,23 @@ model LexiconEntry {
 
   @@unique([headword, language])
   @@map("lexicon_entries")
+}
+
+/// A browser's Web Push subscription (PRD §7: "Web Push primary, email
+/// fallback"). One browser = one row; a learner using two devices has two.
+/// Sending on a schedule needs a deployed cron trigger, which doesn't exist
+/// yet (Vercel isn't provisioned — TASKS.md M0) — for now these are
+/// consumed by a manually-invoked send script that proves the mechanism
+/// works end to end.
+model PushSubscription {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@map("push_subscriptions")
 }
