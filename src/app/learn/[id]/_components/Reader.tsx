@@ -126,17 +126,22 @@ export function Reader({ lesson }: { lesson: LessonData }) {
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-6 p-8">
       <header>
-        <p className="text-xs tracking-wide text-neutral-500 uppercase">
+        <p className="text-xs tracking-wide text-neutral-500 dark:text-neutral-400 uppercase">
           {lesson.level} · {lesson.type.replace("_", " ").toLowerCase()}
         </p>
         <h1 className="text-2xl font-semibold">{lesson.title}</h1>
         {lesson.topicTags.length > 0 && (
-          <p className="mt-1 text-sm text-neutral-500">{lesson.topicTags.join(", ")}</p>
+          <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
+            {lesson.topicTags.join(", ")}
+          </p>
         )}
       </header>
 
       {pendingCount > 0 && (
-        <p className="rounded border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
+        <p
+          data-testid="pending-sync"
+          className="rounded border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200"
+        >
           {pendingCount} update{pendingCount === 1 ? "" : "s"} will sync once you&apos;re
           back online.
         </p>
@@ -147,7 +152,7 @@ export function Reader({ lesson }: { lesson: LessonData }) {
           <audio ref={audioRef} controls src={lesson.audioUrl} className="w-full">
             Your browser does not support the audio element.
           </audio>
-          <label className="flex items-center gap-2 text-sm text-neutral-500">
+          <label className="flex items-center gap-2 text-sm text-neutral-500 dark:text-neutral-400">
             Speed:
             <select
               defaultValue="1"
@@ -166,13 +171,13 @@ export function Reader({ lesson }: { lesson: LessonData }) {
         </div>
       )}
       {!lesson.audioUrl && (
-        <p className="text-sm text-neutral-500 italic">
+        <p className="text-sm text-neutral-500 dark:text-neutral-400 italic">
           No narration yet for this lesson — reading only.
         </p>
       )}
 
       <div className="flex items-center gap-3 text-sm">
-        <span className="text-neutral-500">Text size:</span>
+        <span className="text-neutral-500 dark:text-neutral-400">Text size:</span>
         <button
           type="button"
           onClick={() => setFontScaleIndex((i) => Math.max(0, i - 1))}
@@ -224,7 +229,12 @@ export function Reader({ lesson }: { lesson: LessonData }) {
                 token.trim() === "" ? (
                   token
                 ) : (
-                  <WordSpan key={i} raw={token} lessonId={lesson.id} />
+                  <WordSpan
+                    key={i}
+                    raw={token}
+                    lessonId={lesson.id}
+                    onQueued={() => setPendingCount((c) => c + 1)}
+                  />
                 ),
               )}
           </p>
@@ -249,7 +259,10 @@ export function Reader({ lesson }: { lesson: LessonData }) {
       )}
 
       {result && (
-        <section className="rounded border border-green-300 bg-green-50 p-4 text-sm text-green-900 dark:border-green-800 dark:bg-green-950 dark:text-green-200">
+        <section
+          data-testid="lesson-result"
+          className="rounded border border-green-300 bg-green-50 p-4 text-sm text-green-900 dark:border-green-800 dark:bg-green-950 dark:text-green-200"
+        >
           {result.correctCount === -1 ? (
             <p>
               Lesson finished — your answers will be scored once you&apos;re back online.

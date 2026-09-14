@@ -63,6 +63,7 @@ model User {
   streak            Streak?
   levelEstimate     LevelEstimate?
   pushSubscriptions PushSubscription[]
+  analyticsEvents   AnalyticsEvent[]
 
   @@map("users")
 }
@@ -192,6 +193,24 @@ model LexiconEntry {
 
   @@unique([headword, language])
   @@map("lexicon_entries")
+}
+
+/// Event log backing the PRD §10 success metrics (D7/D30 retention, streak
+/// length, weekly input hours, lesson completion rate) — see
+/// src/server/analytics.ts. PostHog itself isn't wired up yet (blocked on a
+/// PostHog account, TASKS.md M0); events land here in the meantime so
+/// nothing is lost, and can be backfilled once it exists.
+model AnalyticsEvent {
+  id         String   @id @default(cuid())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  event      String
+  properties Json?
+  createdAt  DateTime @default(now())
+
+  @@index([event, createdAt])
+  @@index([userId, createdAt])
+  @@map("analytics_events")
 }
 
 /// A browser's Web Push subscription (PRD §7: "Web Push primary, email

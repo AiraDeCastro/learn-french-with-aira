@@ -14,13 +14,13 @@ export function Nav() {
         </Link>
         <Link
           href="/library"
-          className="text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100"
+          className="text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100"
         >
           Library
         </Link>
         <Link
           href="/dashboard"
-          className="text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100"
+          className="text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100"
         >
           Progress
         </Link>
@@ -30,14 +30,14 @@ export function Nav() {
           <button
             type="button"
             onClick={() => signOut()}
-            className="text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100"
+            className="text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100"
           >
             Sign out ({session.user.email})
           </button>
         ) : (
           <Link
             href="/signin"
-            className="text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100"
+            className="text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100"
           >
             Sign in
           </Link>

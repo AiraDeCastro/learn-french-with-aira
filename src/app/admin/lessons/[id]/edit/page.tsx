@@ -9,7 +9,10 @@ export default function EditLessonPage({ params }: { params: Promise<{ id: strin
   const { id } = use(params);
   const { data: lesson, isLoading, error } = api.lesson.getById.useQuery({ id });
 
-  if (isLoading) return <div className="p-8 text-sm text-neutral-500">Loading…</div>;
+  if (isLoading)
+    return (
+      <div className="p-8 text-sm text-neutral-500 dark:text-neutral-400">Loading…</div>
+    );
   if (error || !lesson)
     return <div className="p-8 text-sm text-red-600">Lesson not found.</div>;
 

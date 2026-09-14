@@ -34,9 +34,15 @@ export const notificationsRouter = createTRPCRouter({
 
   unsubscribe: publicProcedure
     .input(z.object({ endpoint: z.string().url() }))
-    .mutation(({ ctx, input }) =>
-      ctx.db.pushSubscription.deleteMany({ where: { endpoint: input.endpoint } }),
-    ),
+    .mutation(({ ctx, input }) => {
+      if (!ctx.userId) throw new TRPCError({ code: "UNAUTHORIZED" });
+      // Scoped by userId, not just endpoint: without this, anyone who
+      // learned another user's endpoint string could delete that user's
+      // subscription — found during the M5 privacy/access-control audit.
+      return ctx.db.pushSubscription.deleteMany({
+        where: { endpoint: input.endpoint, userId: ctx.userId },
+      });
+    }),
 
   setReminderHour: publicProcedure
     .input(z.object({ hour: z.number().int().min(0).max(23).nullable() }))

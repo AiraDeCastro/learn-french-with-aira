@@ -18,18 +18,25 @@ export default function LessonsPage() {
         </Link>
       </div>
 
-      {isLoading && <p className="text-sm text-neutral-500">Loading…</p>}
+      {isLoading && (
+        <p className="text-sm text-neutral-500 dark:text-neutral-400">Loading…</p>
+      )}
 
       {lessons && lessons.length === 0 && (
-        <p className="text-sm text-neutral-500">No lessons yet. Create the first one.</p>
+        <p className="text-sm text-neutral-500 dark:text-neutral-400">
+          No lessons yet. Create the first one.
+        </p>
       )}
 
       <ul className="flex flex-col divide-y divide-neutral-200 dark:divide-neutral-800">
         {lessons?.map((lesson) => (
-          <li key={lesson.id} className="flex items-center justify-between py-3">
+          <li
+            key={lesson.id}
+            className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between"
+          >
             <div>
               <p className="font-medium">{lesson.title}</p>
-              <p className="text-xs text-neutral-500">
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">
                 {lesson.level} · {lesson.type.replace("_", " ").toLowerCase()} ·{" "}
                 {lesson.topicTags.join(", ") || "no tags"}
                 {!lesson.audioUrl && " · no audio yet"}
@@ -44,7 +51,7 @@ export default function LessonsPage() {
               </Link>
               <Link
                 href={`/admin/lessons/${lesson.id}/edit`}
-                className="text-sm font-medium text-blue-600 hover:underline"
+                className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline"
               >
                 Edit
               </Link>

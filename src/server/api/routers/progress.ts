@@ -3,6 +3,7 @@ import { z } from "zod";
 import { createTRPCRouter, publicProcedure } from "@/server/api/trpc";
 import { applyLessonCompletion, localDateString } from "@/server/streak";
 import { estimateLevel, maxLevel, type Level } from "@/server/level-estimate";
+import { track } from "@/server/analytics";
 
 /**
  * Progress is server-authoritative (PLANNING.md §2.2): the client never
@@ -123,6 +124,24 @@ export const progressRouter = createTRPCRouter({
         create: { userId, level, basis },
       });
 
+      // Paired with `lesson_started` (lesson.getForReader) for the PRD §10
+      // completion-rate metric; `durationSeconds` and `streakCurrentCount`
+      // here are what the weekly-input-hours and streak-length metrics get
+      // computed from.
+      await track(ctx.db, {
+        userId,
+        event: "lesson_completed",
+        properties: {
+          lessonId: input.lessonId,
+          correctCount,
+          total: questions.length,
+          durationSeconds: input.durationSeconds,
+          streakCurrentCount: streak.currentCount,
+          streakBroken: streakUpdate.streakBroken,
+          level,
+        },
+      });
+
       return {
         correctCount,
         total: questions.length,
@@ -180,27 +199,34 @@ export const progressRouter = createTRPCRouter({
     const completedIds = completions.map((c) => c.lessonId);
     const notCompleted = { id: { notIn: completedIds } };
 
+    // id tiebreaker throughout: rows seeded/imported in the same batch can
+    // share a createdAt down to the millisecond, which otherwise makes
+    // "the next lesson" inconsistent across identical calls.
+    function stableOrder() {
+      return [{ createdAt: "asc" as const }, { id: "asc" as const }];
+    }
+
     const byLevelAndInterest =
       user.interests.length > 0
         ? await ctx.db.lesson.findFirst({
             where: { level, topicTags: { hasSome: user.interests }, ...notCompleted },
-            orderBy: { createdAt: "asc" },
+            orderBy: stableOrder(),
           })
         : null;
     if (byLevelAndInterest) return byLevelAndInterest;
 
     const byLevel = await ctx.db.lesson.findFirst({
       where: { level, ...notCompleted },
-      orderBy: { createdAt: "asc" },
+      orderBy: stableOrder(),
     });
     if (byLevel) return byLevel;
 
     const anyNotCompleted = await ctx.db.lesson.findFirst({
       where: notCompleted,
-      orderBy: { createdAt: "asc" },
+      orderBy: stableOrder(),
     });
     if (anyNotCompleted) return anyNotCompleted;
 
-    return ctx.db.lesson.findFirst({ orderBy: { createdAt: "asc" } });
+    return ctx.db.lesson.findFirst({ orderBy: stableOrder() });
   }),
 });

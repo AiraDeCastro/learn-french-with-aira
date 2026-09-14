@@ -49,7 +49,7 @@ export default function OnboardingPage() {
       <div className="mx-auto flex max-w-xl flex-col gap-6 p-8">
         <header>
           <h1 className="text-2xl font-semibold">Why are you learning French?</h1>
-          <p className="mt-2 text-sm text-neutral-500">
+          <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">
             This just helps us pick content you&apos;ll actually want to read.
           </p>
         </header>
@@ -65,7 +65,9 @@ export default function OnboardingPage() {
               className="rounded border border-neutral-300 px-4 py-3 text-left text-sm dark:border-neutral-700"
             >
               <span className="font-medium">{g.label}</span>
-              <span className="mt-1 block text-neutral-500">{g.hint}</span>
+              <span className="mt-1 block text-neutral-500 dark:text-neutral-400">
+                {g.hint}
+              </span>
             </button>
           ))}
         </div>
@@ -77,12 +79,14 @@ export default function OnboardingPage() {
     <div className="mx-auto flex max-w-xl flex-col gap-6 p-8">
       <header>
         <h1 className="text-2xl font-semibold">What are you interested in?</h1>
-        <p className="mt-2 text-sm text-neutral-500">
+        <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">
           Pick up to {MAX_INTERESTS} — we&apos;ll prioritize lessons that match.
         </p>
       </header>
 
-      {topicsLoading && <p className="text-sm text-neutral-500">Loading…</p>}
+      {topicsLoading && (
+        <p className="text-sm text-neutral-500 dark:text-neutral-400">Loading…</p>
+      )}
 
       <div className="flex flex-wrap gap-2">
         {topics?.map((topic) => {

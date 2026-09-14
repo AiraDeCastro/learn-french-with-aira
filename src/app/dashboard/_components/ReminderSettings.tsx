@@ -66,7 +66,7 @@ export function ReminderSettings() {
   return (
     <div className="rounded border border-neutral-200 p-4 dark:border-neutral-800">
       <h2 className="font-semibold">Daily reminder</h2>
-      <p className="mt-1 text-sm text-neutral-500">
+      <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
         A nudge at your usual practice time — no account required, just this browser.
       </p>
 

@@ -42,8 +42,14 @@ export function resolveMediaPath(relativeSegments: string[]): string | null {
   const relativePath = path.join(...relativeSegments);
   const absolutePath = path.join(STORAGE_ROOT, relativePath);
 
-  // Guard against path traversal escaping STORAGE_ROOT.
-  if (!absolutePath.startsWith(STORAGE_ROOT)) return null;
+  // Guard against path traversal escaping STORAGE_ROOT. Deliberately NOT a
+  // plain `absolutePath.startsWith(STORAGE_ROOT)` check — that has a
+  // classic sibling-directory bypass (e.g. a real "storage/uploads-evil"
+  // dir would pass a startsWith check against "storage/uploads"). Using
+  // path.relative() instead: it only stays inside STORAGE_ROOT if the
+  // result doesn't start with ".." and isn't itself absolute.
+  const relativeToRoot = path.relative(STORAGE_ROOT, absolutePath);
+  if (relativeToRoot.startsWith("..") || path.isAbsolute(relativeToRoot)) return null;
   if (!existsSync(absolutePath) || !statSync(absolutePath).isFile()) return null;
 
   return absolutePath;

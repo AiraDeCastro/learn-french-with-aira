@@ -149,7 +149,7 @@ export function LessonForm({
         />
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div>
           <label className={labelClass} htmlFor="level">
             Level
@@ -245,10 +245,13 @@ export function LessonForm({
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
-          <label className={labelClass}>Audio</label>
+          <label className={labelClass} htmlFor="audioFile">
+            Audio
+          </label>
           <input
+            id="audioFile"
             type="file"
             accept="audio/*"
             onChange={(e) =>
@@ -256,10 +259,14 @@ export function LessonForm({
             }
           />
           {uploading === "audio" && (
-            <p className="mt-1 text-xs text-neutral-500">Uploading…</p>
+            <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+              Uploading…
+            </p>
           )}
           {values.audioUrl && (
-            <p className="mt-1 truncate text-xs text-neutral-500">{values.audioUrl}</p>
+            <p className="mt-1 truncate text-xs text-neutral-500 dark:text-neutral-400">
+              {values.audioUrl}
+            </p>
           )}
           {!values.audioUrl && (
             <p className="mt-1 text-xs text-amber-600">
@@ -268,8 +275,11 @@ export function LessonForm({
           )}
         </div>
         <div>
-          <label className={labelClass}>Cover image</label>
+          <label className={labelClass} htmlFor="coverFile">
+            Cover image
+          </label>
           <input
+            id="coverFile"
             type="file"
             accept="image/*"
             onChange={(e) =>
@@ -277,10 +287,12 @@ export function LessonForm({
             }
           />
           {uploading === "cover" && (
-            <p className="mt-1 text-xs text-neutral-500">Uploading…</p>
+            <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+              Uploading…
+            </p>
           )}
           {values.coverImageUrl && (
-            <p className="mt-1 truncate text-xs text-neutral-500">
+            <p className="mt-1 truncate text-xs text-neutral-500 dark:text-neutral-400">
               {values.coverImageUrl}
             </p>
           )}
@@ -289,22 +301,22 @@ export function LessonForm({
 
       <fieldset className="rounded border border-neutral-300 p-4 dark:border-neutral-700">
         <legend className="px-1 text-sm font-medium">Transcript segments</legend>
-        <p className="mb-3 text-xs text-neutral-500">
+        <p className="mb-3 text-xs text-neutral-500 dark:text-neutral-400">
           One row per sentence, in reading order. Leave start/end blank until real audio
           timing exists.
         </p>
         <div className="flex flex-col gap-2">
           {values.segments.map((segment, i) => (
-            <div key={i} className="flex items-center gap-2">
+            <div key={i} className="flex flex-wrap items-center gap-2">
               <span className="w-5 text-xs text-neutral-400">{i + 1}</span>
               <input
-                className={inputClass}
+                className={`${inputClass} min-w-0 flex-1 basis-full sm:basis-auto`}
                 placeholder="Sentence text"
                 value={segment.text}
                 onChange={(e) => updateSegment(i, { text: e.target.value })}
               />
               <input
-                className={`${inputClass} w-24`}
+                className={`${inputClass} w-24 min-w-0 flex-1 sm:flex-none`}
                 type="number"
                 placeholder="start ms"
                 value={segment.startMs ?? ""}
@@ -315,7 +327,7 @@ export function LessonForm({
                 }
               />
               <input
-                className={`${inputClass} w-24`}
+                className={`${inputClass} w-24 min-w-0 flex-1 sm:flex-none`}
                 type="number"
                 placeholder="end ms"
                 value={segment.endMs ?? ""}
@@ -338,7 +350,7 @@ export function LessonForm({
         <button
           type="button"
           onClick={addSegment}
-          className="mt-3 text-sm font-medium text-blue-600 hover:underline"
+          className="mt-3 text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline"
         >
           + Add segment
         </button>
@@ -393,7 +405,7 @@ export function LessonForm({
                   onClick={() =>
                     updateQuestion(qi, { choices: [...question.choices, ""] })
                   }
-                  className="self-start text-xs font-medium text-blue-600 hover:underline"
+                  className="self-start text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline"
                 >
                   + Add choice
                 </button>
@@ -404,7 +416,7 @@ export function LessonForm({
         <button
           type="button"
           onClick={addQuestion}
-          className="mt-3 text-sm font-medium text-blue-600 hover:underline"
+          className="mt-3 text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline"
         >
           + Add question
         </button>

@@ -54,6 +54,27 @@ describe("notificationsRouter", () => {
     expect(count).toBe(1);
   });
 
+  it("refuses to let a different user unsubscribe someone else's endpoint — regression test for the M5 access-control gap", async () => {
+    const otherUser = await db.user.upsert({
+      where: { email: "notifications-other-user-test@aira.test" },
+      update: {},
+      create: { email: "notifications-other-user-test@aira.test" },
+    });
+    const otherCaller = appRouter.createCaller({ db, userId: otherUser.id });
+
+    await otherCaller.notifications.unsubscribe({
+      endpoint: "https://push.example.com/abc123",
+    });
+
+    // Still there — the other user's unsubscribe call touched 0 rows.
+    const settings = await appRouter
+      .createCaller({ db, userId })
+      .notifications.getReminderSettings();
+    expect(settings.hasSubscription).toBe(true);
+
+    await db.user.delete({ where: { id: otherUser.id } });
+  });
+
   it("removes a subscription on unsubscribe", async () => {
     const caller = appRouter.createCaller({ db, userId });
 

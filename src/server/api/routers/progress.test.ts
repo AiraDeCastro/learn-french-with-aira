@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { appRouter } from "@/server/api/root";
 import { db } from "@/server/db";
 import { localDateString } from "@/server/streak";
+import { track } from "@/server/analytics";
 
 /**
  * Constructs its own context with a real test user's id rather than going
@@ -25,6 +26,7 @@ describe("progressRouter", () => {
   });
 
   afterAll(async () => {
+    await db.analyticsEvent.deleteMany({ where: { userId } });
     await db.lessonCompletion.deleteMany({
       where: { lessonId: { in: createdLessonIds } },
     });
@@ -79,6 +81,23 @@ describe("progressRouter", () => {
     expect(result.correctCount).toBe(1);
     expect(result.streak.currentCount).toBe(1);
     expect(result.levelEstimate.level).toBe("A1");
+
+    // PRD §10's completion-rate/streak-length/weekly-input metrics all get
+    // computed from this event — see src/server/analytics.ts.
+    const events = await db.analyticsEvent.findMany({
+      where: {
+        userId,
+        event: "lesson_completed",
+        properties: { path: ["lessonId"], equals: lesson.id },
+      },
+    });
+    expect(events).toHaveLength(1);
+    expect(events[0].properties).toMatchObject({
+      lessonId: lesson.id,
+      correctCount: 1,
+      total: 2,
+      streakCurrentCount: 1,
+    });
   });
 
   it("continues the streak on a consecutive day and reflects it in the dashboard", async () => {
@@ -149,6 +168,22 @@ describe("progressRouter", () => {
     expect(result.streak.currentCount).toBe(7);
     expect(result.streak.hitSevenDayMilestone).toBe(true);
     expect(result.streak.freezeEarned).toBe(true);
+  });
+});
+
+describe("analytics track()", () => {
+  it("swallows a write failure instead of throwing — must never break the caller's action", async () => {
+    // A userId with no matching User row trips the AnalyticsEvent FK
+    // constraint — a real write failure, not a mock, exercising the same
+    // catch path a genuine DB hiccup would hit.
+    await expect(
+      track(db, { userId: "does-not-exist", event: "lesson_completed" }),
+    ).resolves.toBeUndefined();
+
+    const events = await db.analyticsEvent.findMany({
+      where: { userId: "does-not-exist" },
+    });
+    expect(events).toHaveLength(0);
   });
 });
 

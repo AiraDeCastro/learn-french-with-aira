@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { createTRPCRouter, publicProcedure } from "@/server/api/trpc";
+import { track } from "@/server/analytics";
 
 const levelSchema = z.enum(["A1", "A2", "B1", "B2", "C1", "C2"]);
 const lessonTypeSchema = z.enum([
@@ -47,7 +48,10 @@ const lessonInput = z.object({
 export const lessonRouter = createTRPCRouter({
   list: publicProcedure.query(({ ctx }) =>
     ctx.db.lesson.findMany({
-      orderBy: { createdAt: "desc" },
+      // id tiebreaker: rows created in the same seed/import batch can share
+      // a createdAt down to the millisecond, which otherwise makes the
+      // order non-deterministic across identical queries.
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       include: { segments: true, questions: true },
     }),
   ),
@@ -71,6 +75,51 @@ export const lessonRouter = createTRPCRouter({
       },
     }),
   ),
+
+  /**
+   * What the reader (/learn/[id]) actually fetches — deliberately NOT
+   * `getById`. `getById` includes `ComprehensionQuestion.correctIndex` for
+   * the admin edit form; sending that to the reader would let anyone open
+   * devtools and read the answer key before attempting the quiz, which
+   * defeats the whole point of the comprehension check (and, downstream,
+   * makes the streak/level-estimate signals it feeds meaningless — see the
+   * "streaks ≠ input" risk in PRD §12). This `select` is the actual
+   * security boundary; the client-side TypeScript type is not.
+   */
+  getForReader: publicProcedure
+    .input(z.object({ id: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const lesson = await ctx.db.lesson.findUniqueOrThrow({
+        where: { id: input.id },
+        select: {
+          id: true,
+          title: true,
+          level: true,
+          type: true,
+          topicTags: true,
+          translation: true,
+          audioUrl: true,
+          segments: {
+            orderBy: { order: "asc" },
+            select: { id: true, order: true, text: true, startMs: true, endMs: true },
+          },
+          questions: {
+            orderBy: { order: "asc" },
+            select: { id: true, order: true, prompt: true, choices: true },
+          },
+        },
+      });
+      // A "lesson opened" signal — combined with `lesson_completed`, this is
+      // what the PRD §10 lesson-completion-rate metric is computed from.
+      if (ctx.userId) {
+        await track(ctx.db, {
+          userId: ctx.userId,
+          event: "lesson_started",
+          properties: { lessonId: input.id, level: lesson.level },
+        });
+      }
+      return lesson;
+    }),
 
   create: publicProcedure.input(lessonInput).mutation(({ ctx, input }) => {
     const { segments, questions, ...lessonData } = input;

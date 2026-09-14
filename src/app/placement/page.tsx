@@ -21,7 +21,9 @@ export default function PlacementPage() {
   });
 
   if (isLoading || !questions) {
-    return <div className="p-8 text-sm text-neutral-500">Loading…</div>;
+    return (
+      <div className="p-8 text-sm text-neutral-500 dark:text-neutral-400">Loading…</div>
+    );
   }
 
   if (!started) {
@@ -29,7 +31,7 @@ export default function PlacementPage() {
       <div className="mx-auto flex max-w-xl flex-col gap-6 p-8">
         <header>
           <h1 className="text-2xl font-semibold">Where should we start?</h1>
-          <p className="mt-2 text-sm text-neutral-500">
+          <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">
             This only sorts beginners for now — our library is A1 so far, so it can&apos;t
             place you higher than that yet.
           </p>
@@ -42,7 +44,7 @@ export default function PlacementPage() {
             className="rounded border border-neutral-300 px-4 py-3 text-left text-sm dark:border-neutral-700"
           >
             <span className="font-medium">I&apos;m starting from zero</span>
-            <span className="mt-1 block text-neutral-500">
+            <span className="mt-1 block text-neutral-500 dark:text-neutral-400">
               I don&apos;t know any French yet.
             </span>
           </button>
@@ -52,7 +54,7 @@ export default function PlacementPage() {
             className="rounded border border-neutral-300 px-4 py-3 text-left text-sm dark:border-neutral-700"
           >
             <span className="font-medium">Test my level</span>
-            <span className="mt-1 block text-neutral-500">
+            <span className="mt-1 block text-neutral-500 dark:text-neutral-400">
               I know a little French already.
             </span>
           </button>

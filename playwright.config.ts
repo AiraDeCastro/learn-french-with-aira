@@ -2,7 +2,12 @@ import { defineConfig, devices } from "@playwright/test";
 
 export default defineConfig({
   testDir: "./e2e",
-  fullyParallel: true,
+  // Not parallel: all tests share one local-dev-user fallback (no real
+  // auth yet — see current-user.ts) and one local Postgres connection that
+  // corrupts under concurrent queries (see CLAUDE.md's Promise.all note).
+  // Both are reasons to run one test at a time, not test-isolation theater.
+  fullyParallel: false,
+  workers: 1,
   reporter: "list",
   use: {
     baseURL: "http://localhost:3000",
