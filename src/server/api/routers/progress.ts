@@ -19,6 +19,11 @@ import { sharedOrOwnedByUser } from "@/server/api/routers/lesson";
  */
 export const MIN_LOOKUPS_FOR_IMPORTED_COMPLETION = 3;
 
+/** A word not re-encountered in this many days surfaces in the review nudge (PRD §5). */
+const REVIEW_STALE_DAYS = 14;
+/** Kept small on purpose — "light... not isolated drill" (PRD §5), not a full SRS queue. */
+const REVIEW_WORD_LIMIT = 8;
+
 /**
  * Progress is server-authoritative (PLANNING.md §2.2): the client never
  * decides a word is "known" or a lesson is "complete" on its own — it asks
@@ -211,6 +216,51 @@ export const progressRouter = createTRPCRouter({
       knownWordCount,
       hoursOfInput: totalSeconds / 3600,
     };
+  }),
+
+  /**
+   * "A light, optional nudge back toward re-encountering words in real
+   * content, not isolated drill" (PRD §5) — deliberately NOT a flashcard
+   * queue: no spaced-repetition scheduling, no "did you know this? yes/no"
+   * grading, just the stalest handful of known words plus a link back to
+   * the real lesson each came from, if it still has one.
+   */
+  getWordsForReview: publicProcedure.query(async ({ ctx }) => {
+    if (!ctx.userId) throw new TRPCError({ code: "UNAUTHORIZED" });
+    const userId = ctx.userId;
+
+    const staleBefore = new Date(Date.now() - REVIEW_STALE_DAYS * 24 * 60 * 60 * 1000);
+    const words = await ctx.db.knownWord.findMany({
+      where: { userId, lastSeenAt: { lt: staleBefore } },
+      orderBy: { lastSeenAt: "asc" },
+      take: REVIEW_WORD_LIMIT,
+    });
+    if (words.length === 0) return [];
+
+    // KnownWord.sourceLessonId isn't a real Prisma relation (a word can
+    // outlive the lesson it came from, and a `KnownWord` shouldn't vanish
+    // if a Lesson does) — joined by hand here instead.
+    const sourceLessonIds = [
+      ...new Set(words.map((w) => w.sourceLessonId).filter((id) => id !== null)),
+    ];
+    const [definitions, sourceLessons] = await Promise.all([
+      ctx.db.lexiconEntry.findMany({
+        where: { headword: { in: words.map((w) => w.word) }, language: "fr" },
+      }),
+      ctx.db.lesson.findMany({
+        where: { id: { in: sourceLessonIds } },
+        select: { id: true, title: true },
+      }),
+    ]);
+    const definitionByWord = new Map(definitions.map((d) => [d.headword, d.definition]));
+    const lessonById = new Map(sourceLessons.map((l) => [l.id, l]));
+
+    return words.map((w) => ({
+      word: w.word,
+      lastSeenAt: w.lastSeenAt,
+      definition: definitionByWord.get(w.word) ?? null,
+      sourceLesson: w.sourceLessonId ? (lessonById.get(w.sourceLessonId) ?? null) : null,
+    }));
   }),
 
   /**

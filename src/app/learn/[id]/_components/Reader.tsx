@@ -4,7 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import { api } from "@/trpc/react";
 import { WordSpan } from "./WordSpan";
 import { ComprehensionQuiz } from "./ComprehensionQuiz";
+import { SpeakingPrompt } from "./SpeakingPrompt";
 import { enqueue, peekQueue, removeFromQueue } from "./offlineQueue";
+
+/** Mirrors src/server/level-estimate.ts's LEVEL_ORDER — this client component can't import that (server-only) file. */
+const LEVEL_ORDER = ["A1", "A2", "B1", "B2", "C1", "C2"] as const;
 
 type LessonData = {
   id: string;
@@ -72,6 +76,9 @@ export function Reader({ lesson }: { lesson: LessonData }) {
 
   const saveWordMutation = api.progress.saveWord.useMutation();
   const completeLessonMutation = api.progress.completeLesson.useMutation();
+  const { data: dashboard } = api.progress.getDashboard.useQuery();
+  const learnerLevel = dashboard?.levelEstimate?.level ?? "A1";
+  const speakingUnlocked = LEVEL_ORDER.indexOf(learnerLevel) >= LEVEL_ORDER.indexOf("B1");
 
   const hasTimedSegments = lesson.segments.some(
     (s) => s.startMs != null && s.endMs != null,
@@ -365,6 +372,8 @@ export function Reader({ lesson }: { lesson: LessonData }) {
           )}
         </section>
       )}
+
+      {result && speakingUnlocked && <SpeakingPrompt lessonId={lesson.id} />}
     </div>
   );
 }

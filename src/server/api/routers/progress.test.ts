@@ -482,3 +482,75 @@ describe("completeLesson's lookup gate on an imported lesson with no comprehensi
     expect(result.streak.currentCount).toBe(1);
   });
 });
+
+describe("getWordsForReview — PRD §5 spaced review", () => {
+  const TEST_EMAIL = "review-test@aira.test";
+  let userId: string;
+  let lessonId: string;
+  const DAY_MS = 24 * 60 * 60 * 1000;
+
+  beforeAll(async () => {
+    const user = await db.user.upsert({
+      where: { email: TEST_EMAIL },
+      update: {},
+      create: { email: TEST_EMAIL },
+    });
+    userId = user.id;
+
+    const lesson = await db.lesson.create({
+      data: {
+        title: "Review test lesson",
+        level: "A1",
+        type: "MINI_STORY",
+        bodyText: "Bonjour.",
+      },
+    });
+    lessonId = lesson.id;
+
+    await db.lexiconEntry.upsert({
+      where: { headword_language: { headword: "chien", language: "fr" } },
+      update: { definition: "dog" },
+      create: { headword: "chien", language: "fr", definition: "dog" },
+    });
+  });
+
+  afterAll(async () => {
+    await db.knownWord.deleteMany({ where: { userId } });
+    await db.lexiconEntry.deleteMany({ where: { headword: "chien", language: "fr" } });
+    await db.lesson.delete({ where: { id: lessonId } });
+    await db.user.delete({ where: { id: userId } });
+  });
+
+  it("surfaces a word not re-encountered in 14+ days, with its definition and source lesson", async () => {
+    await db.knownWord.create({
+      data: {
+        userId,
+        word: "chien",
+        sourceLessonId: lessonId,
+        lastSeenAt: new Date(Date.now() - 20 * DAY_MS),
+      },
+    });
+
+    const caller = appRouter.createCaller({ db, userId });
+    const review = await caller.progress.getWordsForReview();
+
+    expect(review).toHaveLength(1);
+    expect(review[0]).toMatchObject({
+      word: "chien",
+      definition: "dog",
+      sourceLesson: { id: lessonId, title: "Review test lesson" },
+    });
+  });
+
+  it("does not surface a word re-encountered recently", async () => {
+    await db.knownWord.upsert({
+      where: { userId_word: { userId, word: "chien" } },
+      update: { lastSeenAt: new Date() },
+      create: { userId, word: "chien", lastSeenAt: new Date() },
+    });
+
+    const caller = appRouter.createCaller({ db, userId });
+    const review = await caller.progress.getWordsForReview();
+    expect(review).toHaveLength(0);
+  });
+});

@@ -15,7 +15,7 @@ import { randomUUID } from "node:crypto";
 
 const STORAGE_ROOT = path.join(process.cwd(), "storage", "uploads");
 
-export type UploadKind = "audio" | "cover" | "transcript";
+export type UploadKind = "audio" | "cover" | "transcript" | "recording";
 
 function extensionFor(filename: string): string {
   const ext = path.extname(filename);

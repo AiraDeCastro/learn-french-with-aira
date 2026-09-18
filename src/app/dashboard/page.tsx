@@ -30,8 +30,13 @@ function StatCard({
   );
 }
 
+function daysAgo(date: Date): number {
+  return Math.floor((Date.now() - new Date(date).getTime()) / (24 * 60 * 60 * 1000));
+}
+
 export default function DashboardPage() {
   const { data, isLoading, error } = api.progress.getDashboard.useQuery();
+  const { data: reviewWords } = api.progress.getWordsForReview.useQuery();
 
   if (isLoading)
     return (
@@ -75,7 +80,10 @@ export default function DashboardPage() {
 
       {levelEstimate?.basis && (
         <p className="text-xs text-neutral-500 dark:text-neutral-400">
-          Level estimate based on: {levelEstimate.basis}
+          Level estimate based on: {levelEstimate.basis}{" "}
+          <Link href="/level-check" className="underline">
+            Curious how you&apos;d place on DELF/DALF? Take the informal check
+          </Link>
         </p>
       )}
 
@@ -87,6 +95,37 @@ export default function DashboardPage() {
           </Link>
           , or just start reading — your level updates automatically as you go.
         </p>
+      )}
+
+      {reviewWords && reviewWords.length > 0 && (
+        <section>
+          <h2 className="mb-1 font-semibold">Words to revisit</h2>
+          <p className="mb-3 text-xs text-neutral-500 dark:text-neutral-400">
+            You haven&apos;t come across these in a couple of weeks — a nudge back into
+            real content, not a flashcard drill.
+          </p>
+          <ul className="flex flex-col divide-y divide-neutral-200 dark:divide-neutral-800">
+            {reviewWords.map((w) => (
+              <li key={w.word} className="flex items-center justify-between gap-3 py-2">
+                <div>
+                  <p className="text-sm font-medium">{w.word}</p>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                    {w.definition ?? "No definition on file"} · last seen{" "}
+                    {daysAgo(w.lastSeenAt)} days ago
+                  </p>
+                </div>
+                {w.sourceLesson && (
+                  <Link
+                    href={`/learn/${w.sourceLesson.id}`}
+                    className="shrink-0 text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline"
+                  >
+                    Revisit in &ldquo;{w.sourceLesson.title}&rdquo; →
+                  </Link>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
 
       <ReminderSettings />

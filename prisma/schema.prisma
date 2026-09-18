@@ -65,6 +65,7 @@ model User {
   pushSubscriptions PushSubscription[]
   analyticsEvents   AnalyticsEvent[]
   importedLessons   Lesson[]            @relation("ImportedLessons")
+  spokenResponses   SpokenResponse[]
 
   @@map("users")
 }
@@ -100,9 +101,10 @@ model Lesson {
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
 
-  segments    TranscriptSegment[]
-  questions   ComprehensionQuestion[]
-  completions LessonCompletion[]
+  segments        TranscriptSegment[]
+  questions       ComprehensionQuestion[]
+  completions     LessonCompletion[]
+  spokenResponses SpokenResponse[]
 
   @@index([level, type])
   @@index([ownerId])
@@ -226,6 +228,27 @@ model AnalyticsEvent {
   @@index([event, createdAt])
   @@index([userId, createdAt])
   @@map("analytics_events")
+}
+
+/// A short recorded spoken response to a lesson (PRD §7 V2 "speaking
+/// activation," unlocked at B1+) — record-and-playback only, deliberately
+/// with no transcription. Sending voice audio to a speech-to-text service
+/// would mean a third party processing it with no formal data agreement,
+/// which cuts against the "private by default" stance in PRD §11; revisit
+/// once there's a real contracted STT vendor, not the free browser-only
+/// option evaluated for this milestone (see the M7 session summary in
+/// CLAUDE.md).
+model SpokenResponse {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  lesson    Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  lessonId  String
+  audioUrl  String
+  createdAt DateTime @default(now())
+
+  @@index([userId, lessonId])
+  @@map("spoken_responses")
 }
 
 /// A browser's Web Push subscription (PRD §7: "Web Push primary, email

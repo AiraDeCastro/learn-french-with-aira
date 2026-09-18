@@ -101,11 +101,11 @@ Per PRD §13 Phase 2. Don't start until M0–M5 are live and stable.
 
 Per PRD §13 Phase 3. New services likely needed here (e.g. speech-to-text) — decide those when this milestone starts, not before.
 
-- [ ] Produce/license C2 native-media library (radio-style audio, film clips, literature excerpts)
-- [ ] Build spaced word review: light, optional resurfacing of known words not recently re-encountered (not flashcard drilling — PRD §5)
-- [ ] Build speaking-activation prompts: record a short spoken response to a lesson, from B1+
-- [ ] Evaluate and integrate a speech-to-text service for the speaking-activation feature
-- [ ] Build an optional DELF/DALF-aligned level check, clearly marked as informal (PRD §12: level estimates are directional, not certified)
+- [ ] Produce/license C2 native-media library (radio-style audio, film clips, literature excerpts) — **blocked, same reasoning as A1 audio narration (M1) and B2–C1 content (M6):** needs a real author/licensor, not something to fabricate in a coding session
+- [x] Build spaced word review: light, optional resurfacing of known words not recently re-encountered (not flashcard drilling — PRD §5) — `progress.getWordsForReview` + a "Words to revisit" section on `/dashboard`: the 8 stalest known words (not re-encountered in 14+ days), each with its definition and a link back to the real lesson it came from. No spaced-repetition scheduling, no grading — the point is nudging back into real content, not a drill
+- [x] Build speaking-activation prompts: record a short spoken response to a lesson, from B1+ — `SpeakingPrompt.tsx`, shown after finishing a lesson once the learner is B1+; record via `MediaRecorder`, played back immediately from a local blob, saved to disk (reusing `storage.ts`) as a `SpokenResponse`. **Record-and-playback only, deliberately no transcription/scoring** — see the STT item below for why
+- [x] Evaluate and integrate a speech-to-text service for the speaking-activation feature — **evaluated, decided not to integrate yet.** Checked with Aira first: the only no-account option (the browser's built-in Web Speech API) works by sending the learner's voice to Google's servers with no formal data agreement, which cuts against the "private by default" stance in PRD §11. Chose record-and-playback only instead; revisit once there's a real contracted STT vendor
+- [x] Build an optional DELF/DALF-aligned level check, clearly marked as informal (PRD §12: level estimates are directional, not certified) — `/level-check`, linked from the dashboard. Deliberately separate from the real placement quiz: this doesn't touch `LevelEstimate` or affect recommendations, it's purely a "how would I roughly place" self-check, so it's scored entirely client-side (no answer key worth protecting, unlike the real comprehension check)
 
 ---
 

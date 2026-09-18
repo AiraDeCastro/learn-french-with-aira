@@ -7,6 +7,7 @@ const CONTENT_TYPES: Record<string, string> = {
   ".m4a": "audio/mp4",
   ".wav": "audio/wav",
   ".ogg": "audio/ogg",
+  ".webm": "audio/webm",
   ".jpg": "image/jpeg",
   ".jpeg": "image/jpeg",
   ".png": "image/png",
