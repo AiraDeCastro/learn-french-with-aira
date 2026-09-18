@@ -140,7 +140,7 @@ describe("progressRouter", () => {
     expect(dashboard.knownWordCount).toBeGreaterThan(0);
   });
 
-  it("flags hitSevenDayMilestone on exactly the 7th consecutive day", async () => {
+  it("flags the 7-day milestone on exactly the 7th consecutive day", async () => {
     const caller = appRouter.createCaller({ db, userId });
 
     const lesson = await caller.lesson.create({
@@ -166,8 +166,57 @@ describe("progressRouter", () => {
     });
 
     expect(result.streak.currentCount).toBe(7);
-    expect(result.streak.hitSevenDayMilestone).toBe(true);
+    expect(result.streak.milestoneDays).toBe(7);
     expect(result.streak.freezeEarned).toBe(true);
+  });
+
+  it("flags the 30-day milestone on exactly the 30th consecutive day, and no milestone on the 29th", async () => {
+    const caller = appRouter.createCaller({ db, userId });
+
+    const lessonA = await caller.lesson.create({
+      title: "Progress test lesson 4a",
+      level: "A1",
+      type: "MINI_STORY",
+      bodyText: "Bonjour.",
+      segments: [{ order: 0, text: "Bonjour." }],
+      questions: [],
+    });
+    createdLessonIds.push(lessonA.id);
+    const lessonB = await caller.lesson.create({
+      title: "Progress test lesson 4b",
+      level: "A1",
+      type: "MINI_STORY",
+      bodyText: "Bonjour.",
+      segments: [{ order: 0, text: "Bonjour." }],
+      questions: [],
+    });
+    createdLessonIds.push(lessonB.id);
+
+    const yesterday = localDateString(new Date(Date.now() - 24 * 60 * 60 * 1000), "UTC");
+    await db.streak.upsert({
+      where: { userId },
+      update: { currentCount: 28, freezeBalance: 0, lastActiveDate: yesterday },
+      create: { userId, currentCount: 28, freezeBalance: 0, lastActiveDate: yesterday },
+    });
+
+    const day29 = await caller.progress.completeLesson({
+      lessonId: lessonA.id,
+      answers: [],
+    });
+    expect(day29.streak.currentCount).toBe(29);
+    expect(day29.streak.milestoneDays).toBeNull();
+
+    // completeLesson uses the real current date internally, so "the next
+    // day" has to be simulated the same way the earlier tests in this file
+    // do: write lastActiveDate back to yesterday before the next call.
+    await db.streak.update({ where: { userId }, data: { lastActiveDate: yesterday } });
+
+    const day30 = await caller.progress.completeLesson({
+      lessonId: lessonB.id,
+      answers: [],
+    });
+    expect(day30.streak.currentCount).toBe(30);
+    expect(day30.streak.milestoneDays).toBe(30);
   });
 });
 
@@ -342,5 +391,94 @@ describe("recommendNextLesson", () => {
 
     const recommended = await caller.progress.recommendNextLesson();
     expect(recommended?.title).toBe("Recommend test — no matching topic");
+  });
+
+  it("prefers an interest match at the wrong level over an on-level lesson with no interest match — PRD §7 Phase 2: interest before level", async () => {
+    const caller = appRouter.createCaller({ db, userId });
+
+    // The learner's level is B2 (set in the first test above); this lesson
+    // matches their "cooking" interest but is the wrong level entirely.
+    const wrongLevelButInterest = await caller.lesson.create({
+      title: "Recommend test — matching topic, wrong level",
+      level: "A1",
+      type: "MINI_STORY",
+      topicTags: ["cooking"],
+      bodyText: "Bonjour.",
+      segments: [],
+      questions: [],
+    });
+    createdLessonIds.push(wrongLevelButInterest.id);
+
+    // "Recommend test — no matching topic" (B2, no topic) is still sitting
+    // uncompleted from the earlier tests in this block — on-level, but not
+    // what the learner said they're interested in.
+    const recommended = await caller.progress.recommendNextLesson();
+    expect(recommended?.id).toBe(wrongLevelButInterest.id);
+  });
+});
+
+describe("completeLesson's lookup gate on an imported lesson with no comprehension check", () => {
+  const TEST_EMAIL = "import-completion-test@aira.test";
+  let userId: string;
+  let lessonId: string;
+
+  beforeAll(async () => {
+    const user = await db.user.upsert({
+      where: { email: TEST_EMAIL },
+      update: {},
+      create: { email: TEST_EMAIL },
+    });
+    userId = user.id;
+
+    const lesson = await db.lesson.create({
+      data: {
+        title: "Imported test article",
+        level: "B2",
+        type: "IMPORTED",
+        sourceType: "IMPORTED",
+        sourceUrl: "https://example.test/imported-completion-test",
+        ownerId: userId,
+        bodyText: "Un texte importé pour les besoins du test.",
+      },
+    });
+    lessonId = lesson.id;
+  });
+
+  afterAll(async () => {
+    await db.lessonCompletion.deleteMany({ where: { lessonId } });
+    await db.knownWord.deleteMany({ where: { userId } });
+    await db.lesson.delete({ where: { id: lessonId } });
+    await db.user.delete({ where: { id: userId } });
+  });
+
+  it("refuses to finish without enough word lookups in this lesson", async () => {
+    const caller = appRouter.createCaller({ db, userId });
+    await expect(
+      caller.progress.completeLesson({ lessonId, answers: [] }),
+    ).rejects.toThrow(/Look up at least/);
+  });
+
+  it("does not count a word looked up in a different lesson toward this one's gate", async () => {
+    const caller = appRouter.createCaller({ db, userId });
+    await caller.progress.saveWord({
+      word: "ailleurs",
+      lessonId: "some-other-lesson-id",
+    });
+
+    await expect(
+      caller.progress.completeLesson({ lessonId, answers: [] }),
+    ).rejects.toThrow(/Look up at least/);
+  });
+
+  it("finishes once enough distinct words have been looked up in this lesson", async () => {
+    const caller = appRouter.createCaller({ db, userId });
+    await caller.progress.saveWord({ word: "un", lessonId });
+    await caller.progress.saveWord({ word: "texte", lessonId });
+    await caller.progress.saveWord({ word: "importé", lessonId });
+
+    const result = await caller.progress.completeLesson({ lessonId, answers: [] });
+    expect(result.total).toBe(0);
+    expect(result.correctCount).toBe(0);
+    expect(result.streak.currentCount).toBe(1);
   });
 });

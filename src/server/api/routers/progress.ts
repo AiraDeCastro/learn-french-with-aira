@@ -1,9 +1,23 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { createTRPCRouter, publicProcedure } from "@/server/api/trpc";
-import { applyLessonCompletion, localDateString } from "@/server/streak";
+import { applyLessonCompletion, localDateString, milestoneHitOn } from "@/server/streak";
 import { estimateLevel, maxLevel, type Level } from "@/server/level-estimate";
 import { track } from "@/server/analytics";
+import { sharedOrOwnedByUser } from "@/server/api/routers/lesson";
+
+/**
+ * An imported lesson (PRD §7 V2 "bring your own content") has no
+ * comprehension questions — nothing auto-generates them from arbitrary
+ * fetched text — so it can't be gated the normal way. Instead it requires
+ * looking up this many distinct new words from the lesson first: real
+ * reading engagement, not a trivial tap-through (PRD §8's "streaks ≠ input"
+ * guardrail). Enforced server-side below; Reader.tsx mirrors the same
+ * number client-side only to disable the button early — the client copy is
+ * UX, not the security boundary (it can't import this file: that would
+ * pull server-only/Prisma code into the browser bundle).
+ */
+export const MIN_LOOKUPS_FOR_IMPORTED_COMPLETION = 3;
 
 /**
  * Progress is server-authoritative (PLANNING.md §2.2): the client never
@@ -39,16 +53,36 @@ export const progressRouter = createTRPCRouter({
       if (!ctx.userId) throw new TRPCError({ code: "UNAUTHORIZED" });
       const userId = ctx.userId;
 
-      const questions = await ctx.db.comprehensionQuestion.findMany({
-        where: { lessonId: input.lessonId },
-        orderBy: { order: "asc" },
-      });
+      const [lesson, questions] = await Promise.all([
+        ctx.db.lesson.findUniqueOrThrow({
+          where: { id: input.lessonId },
+          select: { sourceType: true },
+        }),
+        ctx.db.comprehensionQuestion.findMany({
+          where: { lessonId: input.lessonId },
+          orderBy: { order: "asc" },
+        }),
+      ]);
 
       const correctCount = questions.reduce(
         (count, question, i) =>
           count + (input.answers[i] === question.correctIndex ? 1 : 0),
         0,
       );
+
+      // No comprehension check exists to gate an imported lesson on — see
+      // MIN_LOOKUPS_FOR_IMPORTED_COMPLETION's doc comment above.
+      if (questions.length === 0 && lesson.sourceType === "IMPORTED") {
+        const lookupCount = await ctx.db.knownWord.count({
+          where: { userId, sourceLessonId: input.lessonId },
+        });
+        if (lookupCount < MIN_LOOKUPS_FOR_IMPORTED_COMPLETION) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Look up at least ${MIN_LOOKUPS_FOR_IMPORTED_COMPLETION} words in this lesson before finishing it.`,
+          });
+        }
+      }
 
       const user = input.timezone
         ? await ctx.db.user.update({
@@ -151,7 +185,7 @@ export const progressRouter = createTRPCRouter({
           freezeEarned: streakUpdate.freezeEarned,
           freezeConsumed: streakUpdate.freezeConsumed,
           streakBroken: streakUpdate.streakBroken,
-          hitSevenDayMilestone: streak.currentCount === 7,
+          milestoneDays: milestoneHitOn(streak.currentCount),
         },
         levelEstimate,
       };
@@ -182,7 +216,9 @@ export const progressRouter = createTRPCRouter({
   /**
    * Picks "one recommended lesson at the learner's level and interests, no
    * browsing required" (PRD §7 home-screen requirement). Falls back in
-   * stages — interest+level match, then level-only, then anything
+   * stages, ranking interest ahead of level per PRD §7 Phase 2
+   * ("recommendations filter by interest before level"): interest+level
+   * match, then interest match at any level, then level-only, then anything
    * uncompleted, then anything at all — since a new library can't always
    * satisfy the ideal match.
    */
@@ -197,7 +233,12 @@ export const progressRouter = createTRPCRouter({
     ]);
     const level = levelEstimate?.level ?? "A1";
     const completedIds = completions.map((c) => c.lessonId);
-    const notCompleted = { id: { notIn: completedIds } };
+    // Never recommend another learner's imported lesson (PRD §11) or
+    // something already completed.
+    const notCompleted = {
+      id: { notIn: completedIds },
+      ...sharedOrOwnedByUser(userId),
+    };
 
     // id tiebreaker throughout: rows seeded/imported in the same batch can
     // share a createdAt down to the millisecond, which otherwise makes
@@ -215,6 +256,18 @@ export const progressRouter = createTRPCRouter({
         : null;
     if (byLevelAndInterest) return byLevelAndInterest;
 
+    // Interest wins over level: a lesson matching what the learner said
+    // they care about, even at a level that isn't theirs yet, beats an
+    // on-level lesson about nothing they picked.
+    const byInterestAnyLevel =
+      user.interests.length > 0
+        ? await ctx.db.lesson.findFirst({
+            where: { topicTags: { hasSome: user.interests }, ...notCompleted },
+            orderBy: stableOrder(),
+          })
+        : null;
+    if (byInterestAnyLevel) return byInterestAnyLevel;
+
     const byLevel = await ctx.db.lesson.findFirst({
       where: { level, ...notCompleted },
       orderBy: stableOrder(),
@@ -227,6 +280,9 @@ export const progressRouter = createTRPCRouter({
     });
     if (anyNotCompleted) return anyNotCompleted;
 
-    return ctx.db.lesson.findFirst({ orderBy: stableOrder() });
+    return ctx.db.lesson.findFirst({
+      where: sharedOrOwnedByUser(userId),
+      orderBy: stableOrder(),
+    });
   }),
 });

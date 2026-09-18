@@ -20,6 +20,16 @@ export type StreakUpdate = StreakState & {
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const FREEZE_EVERY_N_DAYS = 7;
 
+/** In-app milestone markers (PRD §8) — visible recognition, not currency/points. */
+export const MILESTONE_DAYS = [7, 30, 100, 365] as const;
+
+/** The milestone just reached by this exact streak count, or null if this count isn't one. */
+export function milestoneHitOn(
+  currentCount: number,
+): (typeof MILESTONE_DAYS)[number] | null {
+  return MILESTONE_DAYS.find((days) => days === currentCount) ?? null;
+}
+
 /** The calendar date ("YYYY-MM-DD") that `date` falls on in `timeZone`. */
 export function localDateString(date: Date, timeZone: string): string {
   return new Intl.DateTimeFormat("en-CA", {

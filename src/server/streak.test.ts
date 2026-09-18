@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { applyLessonCompletion, localDateString, type StreakState } from "./streak";
+import {
+  applyLessonCompletion,
+  localDateString,
+  milestoneHitOn,
+  type StreakState,
+} from "./streak";
 
 const base: StreakState = { currentCount: 0, freezeBalance: 0, lastActiveDate: null };
 
@@ -93,5 +98,23 @@ describe("applyLessonCompletion", () => {
     expect(result.streakBroken).toBe(true);
     expect(result.currentCount).toBe(1);
     expect(result.freezeBalance).toBe(3); // unspent freezes aren't lost on a break
+  });
+});
+
+describe("milestoneHitOn", () => {
+  it("flags exactly the milestone days (PRD §8: 7, 30, 100, 365)", () => {
+    expect(milestoneHitOn(7)).toBe(7);
+    expect(milestoneHitOn(30)).toBe(30);
+    expect(milestoneHitOn(100)).toBe(100);
+    expect(milestoneHitOn(365)).toBe(365);
+  });
+
+  it("returns null for every non-milestone count", () => {
+    expect(milestoneHitOn(0)).toBeNull();
+    expect(milestoneHitOn(1)).toBeNull();
+    expect(milestoneHitOn(6)).toBeNull();
+    expect(milestoneHitOn(8)).toBeNull();
+    expect(milestoneHitOn(29)).toBeNull();
+    expect(milestoneHitOn(366)).toBeNull();
   });
 });

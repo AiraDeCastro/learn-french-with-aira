@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { estimateLevel, levelFromKnownWordCount, maxLevel } from "./level-estimate";
+import {
+  estimateLevel,
+  isAtLeast,
+  levelFromKnownWordCount,
+  maxLevel,
+} from "./level-estimate";
 
 describe("levelFromKnownWordCount", () => {
   it.each([
@@ -54,5 +59,17 @@ describe("maxLevel", () => {
 
   it("returns the same level when both are equal", () => {
     expect(maxLevel("C1", "C1")).toBe("C1");
+  });
+});
+
+describe("isAtLeast", () => {
+  it("is true when the level is above, or equal to, the threshold", () => {
+    expect(isAtLeast("C1", "B2")).toBe(true);
+    expect(isAtLeast("B2", "B2")).toBe(true);
+  });
+
+  it("is false when the level is below the threshold", () => {
+    expect(isAtLeast("B1", "B2")).toBe(false);
+    expect(isAtLeast("A1", "B2")).toBe(false);
   });
 });

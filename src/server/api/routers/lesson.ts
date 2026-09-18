@@ -1,6 +1,24 @@
+import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { createTRPCRouter, publicProcedure } from "@/server/api/trpc";
 import { track } from "@/server/analytics";
+
+/**
+ * Excludes another learner's imported lesson from any shared-library read —
+ * PRD §11 requires imported content stay scoped to the importing learner
+ * only, never joined into the shared library. In-house/licensed lessons
+ * (no single owner) always pass; an imported one only passes for its owner.
+ * Reused everywhere a lesson list/pick is learner-facing: lesson.list,
+ * lesson.listTopics, and progress.recommendNextLesson.
+ */
+export function sharedOrOwnedByUser(userId: string | null) {
+  return {
+    OR: [
+      { sourceType: { not: "IMPORTED" as const } },
+      ...(userId ? [{ ownerId: userId }] : []),
+    ],
+  };
+}
 
 const levelSchema = z.enum(["A1", "A2", "B1", "B2", "C1", "C2"]);
 const lessonTypeSchema = z.enum([
@@ -48,6 +66,7 @@ const lessonInput = z.object({
 export const lessonRouter = createTRPCRouter({
   list: publicProcedure.query(({ ctx }) =>
     ctx.db.lesson.findMany({
+      where: sharedOrOwnedByUser(ctx.userId),
       // id tiebreaker: rows created in the same seed/import batch can share
       // a createdAt down to the millisecond, which otherwise makes the
       // order non-deterministic across identical queries.
@@ -58,7 +77,10 @@ export const lessonRouter = createTRPCRouter({
 
   /** Distinct topic tags in use, for the onboarding interest picker and the library filter — derived from real content instead of a hardcoded list that would drift. */
   listTopics: publicProcedure.query(async ({ ctx }) => {
-    const lessons = await ctx.db.lesson.findMany({ select: { topicTags: true } });
+    const lessons = await ctx.db.lesson.findMany({
+      where: sharedOrOwnedByUser(ctx.userId),
+      select: { topicTags: true },
+    });
     const topics = new Set<string>();
     for (const lesson of lessons) {
       for (const tag of lesson.topicTags) topics.add(tag);
@@ -89,16 +111,18 @@ export const lessonRouter = createTRPCRouter({
   getForReader: publicProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ ctx, input }) => {
-      const lesson = await ctx.db.lesson.findUniqueOrThrow({
+      const { ownerId, ...lesson } = await ctx.db.lesson.findUniqueOrThrow({
         where: { id: input.id },
         select: {
           id: true,
           title: true,
           level: true,
           type: true,
+          sourceType: true,
           topicTags: true,
           translation: true,
           audioUrl: true,
+          ownerId: true,
           segments: {
             orderBy: { order: "asc" },
             select: { id: true, order: true, text: true, startMs: true, endMs: true },
@@ -109,6 +133,13 @@ export const lessonRouter = createTRPCRouter({
           },
         },
       });
+      // Imported lessons are scoped to the importing learner only (PRD §11)
+      // — not joined into the shared library, and not reachable by anyone
+      // else even via a direct link. NOT_FOUND rather than FORBIDDEN so a
+      // guess at someone else's lesson id can't even confirm it exists.
+      if (lesson.sourceType === "IMPORTED" && ownerId !== ctx.userId) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Lesson not found." });
+      }
       // A "lesson opened" signal — combined with `lesson_completed`, this is
       // what the PRD §10 lesson-completion-rate metric is computed from.
       if (ctx.userId) {

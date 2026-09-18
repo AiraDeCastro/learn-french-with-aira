@@ -24,6 +24,12 @@ export function Nav() {
         >
           Progress
         </Link>
+        <Link
+          href="/import"
+          className="text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100"
+        >
+          Import
+        </Link>
       </div>
       <div>
         {status === "authenticated" && session.user ? (

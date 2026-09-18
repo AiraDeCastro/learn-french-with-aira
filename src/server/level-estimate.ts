@@ -8,11 +8,16 @@
 
 export type Level = "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
 
-const LEVEL_ORDER: Level[] = ["A1", "A2", "B1", "B2", "C1", "C2"];
+export const LEVEL_ORDER: Level[] = ["A1", "A2", "B1", "B2", "C1", "C2"];
 
 /** Higher of the two levels. Used to keep an estimate from silently regressing — see `estimateLevel`'s doc comment. */
 export function maxLevel(a: Level, b: Level): Level {
   return LEVEL_ORDER.indexOf(a) >= LEVEL_ORDER.indexOf(b) ? a : b;
+}
+
+/** Whether `level` is at or above `threshold` on the CEFR scale — e.g. gating content import to "learners at B2+" (PRD §7). */
+export function isAtLeast(level: Level, threshold: Level): boolean {
+  return LEVEL_ORDER.indexOf(level) >= LEVEL_ORDER.indexOf(threshold);
 }
 
 const WORD_COUNT_THRESHOLDS: [Level, number][] = [

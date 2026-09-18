@@ -18,6 +18,7 @@ export function WordSpan({
   raw,
   lessonId,
   onQueued,
+  onLookup,
 }: {
   raw: string;
   lessonId: string;
@@ -30,6 +31,16 @@ export function WordSpan({
    * this recovery path.
    */
   onQueued?: () => void;
+  /**
+   * Called with the normalized word on every real-word tap, save success or
+   * not — this is "the learner looked at this word," the engagement signal
+   * an imported lesson's finish-gate counts (see Reader.tsx's
+   * MIN_LOOKUPS_FOR_IMPORTED_COMPLETION). Not the same thing as the
+   * server's own count (KnownWord rows first saved in this lesson) — this
+   * is only ever a client-side hint to enable the button; completeLesson
+   * re-checks for real.
+   */
+  onLookup?: (word: string) => void;
 }) {
   const [open, setOpen] = useState(false);
   const word = normalizeWord(raw);
@@ -53,6 +64,7 @@ export function WordSpan({
   function handleClick() {
     setOpen((prev) => !prev);
     saveWord.mutate({ word, lessonId });
+    onLookup?.(word);
   }
 
   return (

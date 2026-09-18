@@ -90,11 +90,12 @@ Ties M1–M3 together into the flows in PRD §9.
 
 Per PRD §13 Phase 2. Don't start until M0–M5 are live and stable.
 
-- [ ] Produce/license B2–C1 content (imported-adjacent native material, per PRD §6)
-- [ ] Build bring-your-own-content import: paste a link (article/video/podcast) → interactive lesson with lookup and level-tagging (B2+ only)
-- [ ] Scope imported lessons to the importing learner only — never joined into the shared library (PRD §11 content-rights requirement)
-- [ ] Build interest-based recommendation ranking (filter by interest before level, per PRD §7)
-- [ ] Add streak milestone rewards at 30/100/365 days
+- [ ] Produce/license B2–C1 curated library content (per PRD §6) — **blocked, same reasoning as A1 audio narration (M1):** real editorial content at this depth needs an actual author/licensor, not something to fabricate in a coding session just to check a box. PRD §6 itself frames B2's library content as "imported content... the learner brings in" — the bring-your-own-content item below is what actually fills this tier for now; C1 (novels, native podcasts) still needs real sourcing later
+- [x] Build bring-your-own-content import: paste a link (article/video/podcast) → interactive lesson with lookup and level-tagging (B2+ only) — `/import` + `import.fromUrl`; **article links only for this pass** — video/podcast import needs a transcription service, a real infrastructure decision deferred the same way M7's speech-to-text is (see the M6 session summary in CLAUDE.md for why). Learner picks the level tag themselves (B2/C1/C2); a real automated complexity-estimate is a follow-up, not built here. Since an imported article has no auto-generated comprehension check, "finishing" it is gated on looking up ≥3 distinct new words from that lesson instead (server-enforced, not just a disabled button) — ties completion to real reading, per the PRD §8 "streaks ≠ input" guardrail
+- [x] Scope imported lessons to the importing learner only — never joined into the shared library (PRD §11 content-rights requirement) — `Lesson.ownerId` + `sharedOrOwnedByUser()` applied to every shared-library read (`lesson.list`, `listTopics`, `recommendNextLesson`); `lesson.getForReader` 404s (not 403 — doesn't even confirm the lesson exists) for anyone who isn't the owner. Verified with both integration tests and live in-browser (a second test user can't see or open another learner's import)
+- [x] Build interest-based recommendation ranking (filter by interest before level, per PRD §7) — `recommendNextLesson` now tries interest-at-any-level before falling back to level-only, so a lesson matching what the learner said they care about outranks an on-level lesson about nothing they picked
+- [x] Add streak milestone rewards at 30/100/365 days — `milestoneHitOn()` in `streak.ts` (extends the existing 7-day marker); `MILESTONE_MESSAGES` in `Reader.tsx` shows the right banner for whichever one was just hit
+- [ ] Follow-up discovered while building the import feature: a real automated reading-level estimate for imported text (currently the learner just picks B2/C1/C2 themselves) — same directional-only caveat as the placement quiz and level estimate (PRD §12)
 
 ## M7 — Phase 3: Reach Pro (C2)
 

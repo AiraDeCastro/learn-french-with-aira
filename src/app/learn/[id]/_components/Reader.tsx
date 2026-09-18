@@ -11,6 +11,7 @@ type LessonData = {
   title: string;
   level: string;
   type: string;
+  sourceType: string;
   topicTags: string[];
   translation: string | null;
   audioUrl: string | null;
@@ -26,13 +27,31 @@ type LessonData = {
 
 const FONT_SCALES = [1, 1.15, 1.3] as const;
 
+/**
+ * An imported lesson (PRD §7 V2) has no comprehension questions to gate
+ * completion on, so it requires looking up this many distinct new words
+ * instead — must match progress.ts's MIN_LOOKUPS_FOR_IMPORTED_COMPLETION,
+ * which is the actual server-side enforcement; this copy only disables the
+ * button early as a UX nicety and can't be the real boundary (nothing
+ * server-only can be imported into a "use client" component).
+ */
+const MIN_LOOKUPS_FOR_IMPORTED_COMPLETION = 3;
+
+/** Copy for each streak milestone in src/server/streak.ts's MILESTONE_DAYS — visible recognition, not currency/points (PRD §8). */
+const MILESTONE_MESSAGES: Record<number, string> = {
+  7: "🎉 One week in a row — keep it up!",
+  30: "🎉 One month in a row — that's real consistency!",
+  100: "🎉 100 days in a row — incredible!",
+  365: "🎉 One full year in a row — you're unstoppable!",
+};
+
 type CompletionResult = {
   correctCount: number;
   total: number;
   streak?: {
     currentCount: number;
     freezeEarned: boolean;
-    hitSevenDayMilestone: boolean;
+    milestoneDays: number | null;
   };
 };
 
@@ -42,6 +61,8 @@ export function Reader({ lesson }: { lesson: LessonData }) {
   const [activeSegmentId, setActiveSegmentId] = useState<string | null>(null);
   const [result, setResult] = useState<CompletionResult | null>(null);
   const [pendingCount, setPendingCount] = useState(0);
+  const [lookedUpWords, setLookedUpWords] = useState<Set<string>>(new Set());
+  const [completionError, setCompletionError] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const startedAtRef = useRef<number | null>(null);
 
@@ -99,6 +120,7 @@ export function Reader({ lesson }: { lesson: LessonData }) {
   }, []);
 
   function handleQuizSubmit(answers: number[]) {
+    setCompletionError(null);
     const durationSeconds = Math.round(
       (Date.now() - (startedAtRef.current ?? Date.now())) / 1000,
     );
@@ -108,7 +130,16 @@ export function Reader({ lesson }: { lesson: LessonData }) {
       { lessonId: lesson.id, answers, durationSeconds, timezone },
       {
         onSuccess: (data) => setResult(data),
-        onError: () => {
+        onError: (error) => {
+          // A rejection (e.g. the imported-lesson lookup gate not met yet)
+          // is not a dropped connection — queuing it would just fail the
+          // same way again on retry, silently, while telling the learner
+          // it's "syncing." Only genuine network failures get queued.
+          const code = error.data?.code;
+          if (code === "BAD_REQUEST" || code === "FORBIDDEN" || code === "UNAUTHORIZED") {
+            setCompletionError(error.message);
+            return;
+          }
           enqueue({
             type: "completeLesson",
             payload: { lessonId: lesson.id, answers, durationSeconds, timezone },
@@ -122,6 +153,10 @@ export function Reader({ lesson }: { lesson: LessonData }) {
       },
     );
   }
+
+  const isImportedNoQuiz =
+    lesson.sourceType === "IMPORTED" && lesson.questions.length === 0;
+  const readyToFinishImport = lookedUpWords.size >= MIN_LOOKUPS_FOR_IMPORTED_COMPLETION;
 
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-6 p-8">
@@ -234,6 +269,9 @@ export function Reader({ lesson }: { lesson: LessonData }) {
                     raw={token}
                     lessonId={lesson.id}
                     onQueued={() => setPendingCount((c) => c + 1)}
+                    onLookup={(word) =>
+                      setLookedUpWords((prev) => new Set(prev).add(word))
+                    }
                   />
                 ),
               )}
@@ -255,6 +293,38 @@ export function Reader({ lesson }: { lesson: LessonData }) {
             onSubmit={handleQuizSubmit}
             disabled={completeLessonMutation.isPending}
           />
+          {completionError && (
+            <p className="mt-2 text-sm text-red-600 dark:text-red-400">
+              {completionError}
+            </p>
+          )}
+        </section>
+      )}
+
+      {isImportedNoQuiz && !result && (
+        <section className="border-t border-neutral-200 pt-6 dark:border-neutral-800">
+          <p className="mb-3 text-sm text-neutral-500 dark:text-neutral-400">
+            {readyToFinishImport
+              ? "You've looked up enough words to finish this lesson."
+              : `Look up ${MIN_LOOKUPS_FOR_IMPORTED_COMPLETION - lookedUpWords.size} more word${
+                  MIN_LOOKUPS_FOR_IMPORTED_COMPLETION - lookedUpWords.size === 1
+                    ? ""
+                    : "s"
+                } in the text above to finish this lesson (${lookedUpWords.size}/${MIN_LOOKUPS_FOR_IMPORTED_COMPLETION}).`}
+          </p>
+          <button
+            type="button"
+            onClick={() => handleQuizSubmit([])}
+            disabled={!readyToFinishImport || completeLessonMutation.isPending}
+            className="rounded bg-neutral-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-40 dark:bg-neutral-100 dark:text-neutral-900"
+          >
+            Finish lesson
+          </button>
+          {completionError && (
+            <p className="mt-2 text-sm text-red-600 dark:text-red-400">
+              {completionError}
+            </p>
+          )}
         </section>
       )}
 
@@ -270,7 +340,9 @@ export function Reader({ lesson }: { lesson: LessonData }) {
           ) : (
             <>
               <p>
-                Lesson complete! You got {result.correctCount} of {result.total} right.
+                {result.total > 0
+                  ? `Lesson complete! You got ${result.correctCount} of ${result.total} right.`
+                  : "Lesson complete! Nice reading."}
               </p>
               {result.streak && (
                 <p className="mt-2">
@@ -278,8 +350,10 @@ export function Reader({ lesson }: { lesson: LessonData }) {
                   {result.streak.freezeEarned && " — you earned a streak freeze!"}
                 </p>
               )}
-              {result.streak?.hitSevenDayMilestone && (
-                <p className="mt-2 font-medium">🎉 One week in a row — keep it up!</p>
+              {result.streak?.milestoneDays != null && (
+                <p className="mt-2 font-medium">
+                  {MILESTONE_MESSAGES[result.streak.milestoneDays]}
+                </p>
               )}
               <a
                 href="/dashboard"
