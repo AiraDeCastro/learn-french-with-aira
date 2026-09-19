@@ -10,7 +10,7 @@ Scaffolding per [PLANNING.md §3](PLANNING.md#3-technology-stack); nothing produ
 
 - [x] Init Next.js + TypeScript project, with Tailwind CSS configured
 - [x] Set up ESLint, Prettier, and TypeScript strict mode
-- [ ] Provision Postgres (Neon or Supabase) and connect Prisma — **partially done:** Prisma is installed and confirmed working against a local database (`npm run db:dev`, no account needed); a hosted Neon/Supabase project for staging/production still needs to be created by hand — see [session summary in CLAUDE.md](../CLAUDE.md)
+- [x] Provision Postgres (Neon or Supabase) and connect Prisma — Aira created a Neon project; `DATABASE_URL` in `.env` now points at it, schema pushed and seeded, all 98 tests passing against it (and cleanly — no "Connection terminated unexpectedly" flakiness at all, unlike the local `prisma dev` proxy this replaced for day-to-day local dev). See the 2026-09-19 session summary in [CLAUDE.md](../CLAUDE.md)
 - [x] Set up tRPC router scaffolding (client + server)
 - [ ] Configure Auth.js (email + at least one social provider) — **partially done:** Google + Resend magic-link sign-in are wired end-to-end in code; sign-in won't actually work until real Google OAuth and Resend credentials are added to `.env` (see `.env.example`)
 - [ ] Provision Cloudflare R2 bucket for audio/transcripts/cover art — blocked on a Cloudflare account being created
