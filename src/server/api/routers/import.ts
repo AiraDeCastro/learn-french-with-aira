@@ -1,6 +1,4 @@
 import { TRPCError } from "@trpc/server";
-import { Readability } from "@mozilla/readability";
-import { JSDOM } from "jsdom";
 import { z } from "zod";
 import { createTRPCRouter, publicProcedure } from "@/server/api/trpc";
 import { isAtLeast, type Level } from "@/server/level-estimate";
@@ -79,6 +77,15 @@ export const importRouter = createTRPCRouter({
         });
       }
 
+      // Lazily imported, not top-level: tRPC bundles every router into one
+      // module, so a static import here would pull jsdom's module graph
+      // into the evaluation path of every tRPC call, not just this one —
+      // exactly what broke every route in production (Vercel's runtime hit
+      // an ERR_REQUIRE_ESM crash in one of jsdom's transitive deps at
+      // *module load*, not at call time, so it took the whole API down).
+      // Same reasoning as current-user.ts's lazy `@/auth` import.
+      const { JSDOM } = await import("jsdom");
+      const { Readability } = await import("@mozilla/readability");
       const dom = new JSDOM(html, { url: url.toString() });
       const article = new Readability(dom.window.document).parse();
       const text = article?.textContent?.trim() ?? "";
