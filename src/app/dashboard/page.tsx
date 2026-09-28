@@ -9,15 +9,19 @@ function StatCard({
   value,
   sub,
   testId,
+  accent,
 }: {
   label: string;
   value: string;
   sub?: string;
   testId?: string;
+  accent: string;
 }) {
   return (
-    <div className="rounded border border-neutral-200 p-4 dark:border-neutral-800">
-      <p className="text-xs tracking-wide text-neutral-500 dark:text-neutral-400 uppercase">
+    <div
+      className={`rounded-xl border-t-4 bg-neutral-50 p-4 transition hover:-translate-y-1 hover:shadow-md dark:bg-neutral-900 ${accent}`}
+    >
+      <p className="text-xs tracking-wide text-neutral-500 uppercase dark:text-neutral-400">
         {label}
       </p>
       <p className="mt-1 text-2xl font-semibold" data-testid={testId}>
@@ -61,34 +65,47 @@ export default function DashboardPage() {
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <StatCard
           label="Streak"
-          value={`${streak.currentCount} day${streak.currentCount === 1 ? "" : "s"}`}
+          value={`${streak.currentCount > 0 ? "🔥 " : ""}${streak.currentCount} day${streak.currentCount === 1 ? "" : "s"}`}
           sub={
             streak.freezeBalance > 0
               ? `${streak.freezeBalance} freeze${streak.freezeBalance === 1 ? "" : "s"} banked`
               : undefined
           }
           testId="stat-streak"
+          accent="border-orange-500 dark:border-orange-400"
         />
-        <StatCard label="Level" value={levelEstimate?.level ?? "Not yet set"} />
+        <StatCard
+          label="Level"
+          value={levelEstimate?.level ?? "Not yet set"}
+          accent="border-violet-500 dark:border-violet-400"
+        />
         <StatCard
           label="Known words"
           value={String(knownWordCount)}
           testId="stat-known-words"
+          accent="border-emerald-500 dark:border-emerald-400"
         />
-        <StatCard label="Hours of input" value={hoursOfInput.toFixed(1)} />
+        <StatCard
+          label="Hours of input"
+          value={hoursOfInput.toFixed(1)}
+          accent="border-sky-500 dark:border-sky-400"
+        />
       </div>
 
       {levelEstimate?.basis && (
         <p className="text-xs text-neutral-500 dark:text-neutral-400">
           Level estimate based on: {levelEstimate.basis}{" "}
-          <Link href="/level-check" className="underline">
+          <Link
+            href="/level-check"
+            className="text-fuchsia-600 hover:underline dark:text-fuchsia-400"
+          >
             Curious how you&apos;d place on DELF/DALF? Take the informal check
           </Link>
         </p>
       )}
 
       {!levelEstimate && (
-        <p className="rounded border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
+        <p className="rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
           You haven&apos;t taken the placement quiz yet.{" "}
           <Link href="/placement" className="underline">
             Take it now
@@ -117,7 +134,7 @@ export default function DashboardPage() {
                 {w.sourceLesson && (
                   <Link
                     href={`/learn/${w.sourceLesson.id}`}
-                    className="shrink-0 text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline"
+                    className="shrink-0 text-sm font-medium text-fuchsia-600 hover:underline dark:text-fuchsia-400"
                   >
                     Revisit in &ldquo;{w.sourceLesson.title}&rdquo; →
                   </Link>
@@ -131,8 +148,8 @@ export default function DashboardPage() {
       <ReminderSettings />
 
       <Link
-        href="/admin/lessons"
-        className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline"
+        href="/library"
+        className="text-sm font-medium text-fuchsia-600 hover:underline dark:text-fuchsia-400"
       >
         Browse lessons →
       </Link>

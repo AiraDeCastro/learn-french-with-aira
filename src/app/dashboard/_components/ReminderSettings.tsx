@@ -64,7 +64,7 @@ export function ReminderSettings() {
   }
 
   return (
-    <div className="rounded border border-neutral-200 p-4 dark:border-neutral-800">
+    <div className="rounded-xl border-t-4 border-fuchsia-500 bg-neutral-50 p-4 dark:border-fuchsia-400 dark:bg-neutral-900">
       <h2 className="font-semibold">Daily reminder</h2>
       <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
         A nudge at your usual practice time — no account required, just this browser.
@@ -94,7 +94,7 @@ export function ReminderSettings() {
                 hour: e.target.value === "" ? null : Number(e.target.value),
               })
             }
-            className="rounded border border-neutral-300 px-2 py-1 dark:border-neutral-700 dark:bg-neutral-900"
+            className="rounded-full border border-neutral-300 px-2 py-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-fuchsia-500 dark:border-neutral-700 dark:bg-neutral-900"
           >
             <option value="">Not set</option>
             {HOURS.map((h) => (

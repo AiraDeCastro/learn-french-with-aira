@@ -6,6 +6,16 @@ import { api } from "@/trpc/react";
 
 const LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"] as const;
 
+/** Same level→accent mapping as the landing page and reader (src/app/page.tsx, Reader.tsx), for visual consistency. */
+const LEVEL_ACCENTS: Record<string, string> = {
+  A1: "border-emerald-500 dark:border-emerald-400",
+  A2: "border-teal-500 dark:border-teal-400",
+  B1: "border-sky-500 dark:border-sky-400",
+  B2: "border-indigo-500 dark:border-indigo-400",
+  C1: "border-violet-500 dark:border-violet-400",
+  C2: "border-fuchsia-500 dark:border-fuchsia-400",
+};
+
 export default function LibraryPage() {
   const [level, setLevel] = useState<string>("");
   const [topic, setTopic] = useState<string>("");
@@ -40,7 +50,7 @@ export default function LibraryPage() {
             id="levelFilter"
             value={level}
             onChange={(e) => setLevel(e.target.value)}
-            className="rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+            className="rounded-full border border-neutral-300 px-3 py-1.5 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-fuchsia-500 dark:border-neutral-700 dark:bg-neutral-900"
           >
             <option value="">All levels</option>
             {LEVELS.map((l) => (
@@ -61,7 +71,7 @@ export default function LibraryPage() {
             id="topicFilter"
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
-            className="rounded border border-neutral-300 px-3 py-1.5 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+            className="rounded-full border border-neutral-300 px-3 py-1.5 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-fuchsia-500 dark:border-neutral-700 dark:bg-neutral-900"
           >
             <option value="">All topics</option>
             {topics?.map((t) => (
@@ -82,13 +92,13 @@ export default function LibraryPage() {
         </p>
       )}
 
-      <ul className="flex flex-col divide-y divide-neutral-200 dark:divide-neutral-800">
+      <ul className="flex flex-col gap-3">
         {filtered.map((lesson) => (
-          <li key={lesson.id} className="py-3">
+          <li key={lesson.id}>
             <Link
               href={`/learn/${lesson.id}`}
-              className="block"
               data-testid="lesson-link"
+              className={`block rounded-xl border-l-4 bg-neutral-50 p-4 transition hover:-translate-y-1 hover:shadow-md dark:bg-neutral-900 ${LEVEL_ACCENTS[lesson.level] ?? "border-neutral-300 dark:border-neutral-700"}`}
             >
               <p className="font-medium">{lesson.title}</p>
               <p className="text-xs text-neutral-500 dark:text-neutral-400">
