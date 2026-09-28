@@ -39,6 +39,13 @@ model User {
   id        String   @id @default(cuid())
   email     String   @unique
   name      String?
+  /// Required by Auth.js's Prisma adapter (src/auth.ts) — set when a
+  /// Resend magic-link is clicked or (via account linking) an OAuth
+  /// provider confirms the address. Unused by this app's own logic, which
+  /// resolves users by email (src/server/current-user.ts), not this field.
+  emailVerified DateTime?
+  /// Auth.js adapter field (e.g. a Google profile photo). Unused elsewhere.
+  image     String?
   /// IANA name (e.g. "Europe/Paris"), captured opportunistically from the
   /// browser on lesson completion — used to compute the learner's local
   /// calendar day for streaks (PRD §8: "learner's local timezone"). Null
@@ -66,8 +73,70 @@ model User {
   analyticsEvents   AnalyticsEvent[]
   importedLessons   Lesson[]            @relation("ImportedLessons")
   spokenResponses   SpokenResponse[]
+  /// Auth.js adapter relations (src/auth.ts) — one row per linked OAuth
+  /// provider (Google) and, only if session strategy ever switches off
+  /// JWT, one row per active session. Session stays unused at JWT strategy
+  /// but must exist for the adapter's Prisma delegate calls to compile.
+  accounts          Account[]
+  sessions          Session[]
 
   @@map("users")
+}
+
+/// Auth.js Prisma adapter model (https://authjs.dev/getting-started/adapters/prisma)
+/// — required once any provider is adapter-backed (added 2026-09-28 when the
+/// Resend/email provider's real key was wired in: Auth.js throws
+/// `MissingAdapter` for Email/magic-link sign-in without one). Stores the
+/// linked Google account per user; Google sign-in worked without this before
+/// only because no adapter existed yet, so nothing was ever persisted here.
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+/// Auth.js adapter model — kept unused at runtime (session strategy is
+/// "jwt", set explicitly in src/auth.ts, so no row is ever written here)
+/// but must exist because PrismaAdapter's TypeScript contract references
+/// `prisma.session` regardless of session strategy.
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+/// Auth.js adapter model backing the Resend magic-link flow specifically:
+/// stores the one-time token emailed to the learner so a later click on
+/// the link can be verified server-side. This is the actual model whose
+/// absence caused the `MissingAdapter` crash — Account/Session/emailVerified
+/// weren't strictly needed for Email sign-in alone, but come as one
+/// contract with the adapter.
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
 }
 
 model Lesson {
