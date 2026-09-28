@@ -3,36 +3,42 @@
 import Link from "next/link";
 import { api } from "@/trpc/react";
 
-const LEVELS: { level: string; label: string; description: string }[] = [
+const LEVELS: { level: string; label: string; description: string; accent: string }[] = [
   {
     level: "A1",
     label: "Absolute beginner",
     description: "Mini-stories built on 30–40 words, repeated until they stick.",
+    accent: "border-emerald-500 dark:border-emerald-400",
   },
   {
     level: "A2",
     label: "Elementary",
     description: "Longer stories and audio, at a natural-ish pace.",
+    accent: "border-teal-500 dark:border-teal-400",
   },
   {
     level: "B1",
     label: "Intermediate",
     description: "Learner podcasts and simplified news — the bridge to real French.",
+    accent: "border-sky-500 dark:border-sky-400",
   },
   {
     level: "B2",
     label: "Upper intermediate",
     description: "Bring in your own articles and videos; native news at speed.",
+    accent: "border-indigo-500 dark:border-indigo-400",
   },
   {
     level: "C1",
     label: "Advanced",
     description: "French novels, native podcasts, audiobooks.",
+    accent: "border-violet-500 dark:border-violet-400",
   },
   {
     level: "Pro",
     label: "C2 — native level",
     description: "Radio, film with no subtitles, whatever you're actually into.",
+    accent: "border-fuchsia-500 dark:border-fuchsia-400",
   },
 ];
 
@@ -60,29 +66,31 @@ const LOOP_STEPS: { title: string; description: string }[] = [
 function LandingContent() {
   return (
     <div className="flex flex-col">
-      <div className="mx-auto flex w-full max-w-xl flex-col items-start gap-6 px-6 py-16 sm:py-24">
-        <h1 className="text-3xl font-semibold sm:text-4xl">Learn French with Aira</h1>
-        <p className="text-lg text-neutral-500 dark:text-neutral-400">
-          Read and listen to French you can mostly understand, a little above where you
-          are — that&apos;s the whole method.
-        </p>
-        <div className="flex flex-wrap items-center gap-4">
-          <Link
-            href="/onboarding"
-            className="rounded bg-neutral-900 px-5 py-3 text-sm font-medium text-white dark:bg-neutral-100 dark:text-neutral-900"
-          >
-            Get started
-          </Link>
-          <Link
-            href="/library"
-            className="text-sm font-medium text-blue-600 hover:underline dark:text-blue-400"
-          >
-            Browse the library →
-          </Link>
+      <div className="w-full bg-gradient-to-br from-violet-50 via-fuchsia-50 to-transparent dark:from-violet-950/40 dark:via-fuchsia-950/30">
+        <div className="mx-auto flex w-full max-w-xl flex-col items-start gap-6 px-6 py-16 sm:py-24">
+          <h1 className="text-3xl font-semibold sm:text-4xl">Learn French with Aira</h1>
+          <p className="text-lg text-neutral-500 dark:text-neutral-400">
+            Read and listen to French you can mostly understand, a little above where you
+            are — that&apos;s the whole method.
+          </p>
+          <div className="flex flex-wrap items-center gap-4">
+            <Link
+              href="/onboarding"
+              className="rounded-full bg-gradient-to-r from-violet-600 to-fuchsia-600 px-5 py-3 text-sm font-medium text-white transition hover:scale-105 dark:from-violet-300 dark:to-fuchsia-300 dark:text-neutral-900"
+            >
+              Get started
+            </Link>
+            <Link
+              href="/library"
+              className="text-sm font-medium text-blue-600 hover:underline dark:text-blue-400"
+            >
+              Browse the library →
+            </Link>
+          </div>
+          <p className="text-xs text-neutral-500 dark:text-neutral-400">
+            Two minutes to get started.
+          </p>
         </div>
-        <p className="text-xs text-neutral-500 dark:text-neutral-400">
-          Two minutes to get started.
-        </p>
       </div>
 
       <div className="border-t border-neutral-200 dark:border-neutral-800">
@@ -124,7 +132,7 @@ function LandingContent() {
             {LEVELS.map((item) => (
               <div
                 key={item.level}
-                className="rounded border border-neutral-200 p-4 dark:border-neutral-800"
+                className={`rounded-xl border-l-4 bg-neutral-50 p-4 transition hover:-translate-y-1 hover:shadow-md dark:bg-neutral-900 ${item.accent}`}
               >
                 <p className="text-xs tracking-wide text-neutral-500 uppercase dark:text-neutral-400">
                   {item.level} · {item.label}
@@ -144,7 +152,7 @@ function LandingContent() {
           <ol className="mt-5 flex flex-col gap-5">
             {LOOP_STEPS.map((step, index) => (
               <li key={step.title} className="flex gap-4">
-                <span className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-600 to-fuchsia-600 text-sm font-medium text-white dark:from-violet-300 dark:to-fuchsia-300 dark:text-neutral-900">
                   {index + 1}
                 </span>
                 <div>
@@ -164,7 +172,7 @@ function LandingContent() {
           <h2 className="text-xl font-semibold">Ready when you are</h2>
           <Link
             href="/onboarding"
-            className="rounded bg-neutral-900 px-5 py-3 text-sm font-medium text-white dark:bg-neutral-100 dark:text-neutral-900"
+            className="rounded-full transition hover:scale-105 bg-gradient-to-r from-violet-600 to-fuchsia-600 px-5 py-3 text-sm font-medium text-white dark:from-violet-300 dark:to-fuchsia-300 dark:text-neutral-900"
           >
             Get started
           </Link>
@@ -234,7 +242,7 @@ export default function Home() {
           )}
           <Link
             href={`/learn/${lesson.id}`}
-            className="mt-4 inline-block rounded bg-neutral-900 px-5 py-2.5 text-sm font-medium text-white dark:bg-neutral-100 dark:text-neutral-900"
+            className="mt-4 inline-block rounded-full transition hover:scale-105 bg-gradient-to-r from-violet-600 to-fuchsia-600 px-5 py-2.5 text-sm font-medium text-white dark:from-violet-300 dark:to-fuchsia-300 dark:text-neutral-900"
           >
             Start lesson
           </Link>

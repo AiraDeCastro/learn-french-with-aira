@@ -25,6 +25,12 @@ describe("onboardingRouter", () => {
     expect(status.completed).toBe(false);
   });
 
+  it("reports incomplete for a signed-out visitor instead of throwing — regression test for the landing-page loading bug", async () => {
+    const caller = appRouter.createCaller({ db, userId: null });
+    const status = await caller.onboarding.getStatus();
+    expect(status).toEqual({ completed: false, goal: null, interests: [] });
+  });
+
   it("saves goal and interests, then reports complete", async () => {
     const caller = appRouter.createCaller({ db, userId });
 

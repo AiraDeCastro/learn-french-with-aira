@@ -55,7 +55,7 @@ export default function SignInPage() {
               />
               <button
                 type="submit"
-                className="rounded bg-neutral-900 px-4 py-2 text-sm font-medium text-white dark:bg-neutral-100 dark:text-neutral-900"
+                className="rounded-full transition hover:scale-105 bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 py-2 text-sm font-medium text-white dark:from-violet-300 dark:to-fuchsia-300 dark:text-neutral-900"
               >
                 Send me a sign-in link
               </button>

@@ -9,7 +9,12 @@ import { createTRPCRouter, publicProcedure } from "@/server/api/trpc";
  */
 export const onboardingRouter = createTRPCRouter({
   getStatus: publicProcedure.query(async ({ ctx }) => {
-    if (!ctx.userId) throw new TRPCError({ code: "UNAUTHORIZED" });
+    // A signed-out visitor (the normal state for anyone browsing the
+    // public site before signing in) hasn't onboarded by definition —
+    // this used to throw UNAUTHORIZED here, which made the homepage
+    // retry a failing request three times before falling back to the
+    // landing page instead of rendering it immediately.
+    if (!ctx.userId) return { completed: false, goal: null, interests: [] };
     const user = await ctx.db.user.findUniqueOrThrow({ where: { id: ctx.userId } });
     return { completed: user.goal !== null, goal: user.goal, interests: user.interests };
   }),

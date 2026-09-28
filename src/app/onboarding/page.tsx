@@ -100,7 +100,7 @@ export default function OnboardingPage() {
               disabled={!selected && interests.length >= MAX_INTERESTS}
               className={
                 selected
-                  ? "rounded-full border border-neutral-900 bg-neutral-900 px-3 py-1.5 text-sm text-white dark:border-neutral-100 dark:bg-neutral-100 dark:text-neutral-900"
+                  ? "rounded-full border border-neutral-900 bg-neutral-900 px-3 py-1.5 text-sm text-white dark:border-neutral-100 dark:from-violet-300 dark:to-fuchsia-300 dark:text-neutral-900"
                   : "rounded-full border border-neutral-300 px-3 py-1.5 text-sm disabled:opacity-40 dark:border-neutral-700"
               }
             >
@@ -114,7 +114,7 @@ export default function OnboardingPage() {
         type="button"
         onClick={() => goal && complete.mutate({ goal, interests })}
         disabled={complete.isPending}
-        className="self-start rounded bg-neutral-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-neutral-100 dark:text-neutral-900"
+        className="self-start rounded-full transition hover:scale-105 bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-50 dark:from-violet-300 dark:to-fuchsia-300 dark:text-neutral-900"
       >
         {complete.isPending ? "Saving…" : "Continue"}
       </button>

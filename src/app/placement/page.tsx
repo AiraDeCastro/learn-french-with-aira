@@ -101,7 +101,7 @@ export default function PlacementPage() {
         <button
           type="submit"
           disabled={!answered || submit.isPending}
-          className="self-start rounded bg-neutral-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-neutral-100 dark:text-neutral-900"
+          className="self-start rounded-full transition hover:scale-105 bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-50 dark:from-violet-300 dark:to-fuchsia-300 dark:text-neutral-900"
         >
           See my result
         </button>
