@@ -1,0 +1,27 @@
+name: Daily reminders
+
+# Hourly, not daily: each learner picks their own reminder hour (PRD §7),
+# so the trigger has to check in often enough to catch whoever's due right
+# now. Vercel's own native Cron would be simpler, but this project's
+# Vercel plan (Hobby) only runs it once a day — see docs/TASKS.md M4 and
+# the 2026-09-28 CLAUDE.md session summary for why this workflow exists
+# instead of a vercel.json.
+on:
+  schedule:
+    - cron: "0 * * * *"
+  workflow_dispatch: {}
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger reminder send
+        run: |
+          status=$(curl -s -o response.json -w "%{http_code}" \
+            -X GET "https://learn-french-with-aira.vercel.app/api/cron/reminders" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}")
+          cat response.json
+          if [ "$status" -ge 300 ]; then
+            echo "Reminder trigger failed with status $status"
+            exit 1
+          fi

@@ -1,37 +1,24 @@
 /**
- * Sends the daily reminder push notification (PRD §7) to whoever is due
- * right now — i.e. their `reminderHour` (in their own timezone) matches
- * the current hour.
+ * Manually invoked sender for the daily reminder push notification (PRD
+ * §7) — kept for local testing. The real scheduled sender is
+ * src/app/api/cron/reminders/route.ts, triggered hourly by
+ * .github/workflows/reminders.yml; this script shares its core logic
+ * (src/server/reminders.ts) but runs standalone via its own Prisma client,
+ * the same pattern prisma/seed.ts uses to run outside the Next.js runtime.
  *
- * This is a manual stand-in for a real scheduler: actually running this on
- * a timer needs a deployed cron trigger (Vercel isn't provisioned yet —
- * see docs/TASKS.md M0). Until then, run it by hand to prove the mechanism
- * works: `npm run reminders:send`. Pass `--all` to ignore the hour check
- * and send to every subscribed user, for testing.
+ * Run by hand: `npm run reminders:send`. Pass `--all` to ignore the hour
+ * check and send to every subscribed user, for testing.
  */
 import "dotenv/config";
 import webpush from "web-push";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/client";
+import { sendDueReminders } from "../src/server/reminders";
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
 
 const sendToAll = process.argv.includes("--all");
-
-function currentHourFor(timezone: string): number {
-  return Number(
-    new Intl.DateTimeFormat("en-US", {
-      timeZone: timezone,
-      hour: "numeric",
-      hour12: false,
-    }).format(new Date()),
-  );
-}
-
-function isWebPushError(err: unknown): err is { statusCode: number; message: string } {
-  return typeof err === "object" && err !== null && "statusCode" in err;
-}
 
 async function main() {
   if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
@@ -44,49 +31,12 @@ async function main() {
     process.env.VAPID_PRIVATE_KEY,
   );
 
-  const users = await prisma.user.findMany({
-    where: { reminderHour: { not: null }, pushSubscriptions: { some: {} } },
-    include: { pushSubscriptions: true },
+  const result = await sendDueReminders(prisma, webpush.sendNotification.bind(webpush), {
+    all: sendToAll,
   });
 
-  let sent = 0;
-  let skipped = 0;
-  let pruned = 0;
-
-  for (const user of users) {
-    const due = sendToAll || currentHourFor(user.timezone ?? "UTC") === user.reminderHour;
-    if (!due) {
-      skipped++;
-      continue;
-    }
-
-    const payload = JSON.stringify({
-      title: "Time for some French",
-      body: "One short lesson keeps the streak alive.",
-      url: "/",
-    });
-
-    for (const sub of user.pushSubscriptions) {
-      try {
-        await webpush.sendNotification(
-          { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
-          payload,
-        );
-        sent++;
-      } catch (err) {
-        // 404/410 means the browser unsubscribed or the subscription expired.
-        if (isWebPushError(err) && (err.statusCode === 404 || err.statusCode === 410)) {
-          await prisma.pushSubscription.delete({ where: { id: sub.id } });
-          pruned++;
-        } else {
-          console.error(`Failed to send to ${user.email}:`, err);
-        }
-      }
-    }
-  }
-
   console.log(
-    `Sent ${sent}, skipped ${skipped} (not due), pruned ${pruned} dead subscriptions.`,
+    `Sent ${result.sent}, skipped ${result.skipped} (not due), pruned ${result.pruned} dead subscriptions.`,
   );
 }
 
