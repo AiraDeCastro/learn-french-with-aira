@@ -41,6 +41,7 @@ export function ComprehensionQuiz({
                 onChange={() =>
                   setAnswers((prev) => prev.map((a, i) => (i === qi ? ci : a)))
                 }
+                className="accent-fuchsia-600"
               />
               {choice}
             </label>

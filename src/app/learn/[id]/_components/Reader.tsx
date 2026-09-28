@@ -10,6 +10,16 @@ import { enqueue, peekQueue, removeFromQueue } from "./offlineQueue";
 /** Mirrors src/server/level-estimate.ts's LEVEL_ORDER — this client component can't import that (server-only) file. */
 const LEVEL_ORDER = ["A1", "A2", "B1", "B2", "C1", "C2"] as const;
 
+/** Same level→accent mapping as the landing page's level cards (src/app/page.tsx), for visual consistency. */
+const LEVEL_BADGE_COLORS: Record<string, string> = {
+  A1: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300",
+  A2: "bg-teal-100 text-teal-800 dark:bg-teal-900/40 dark:text-teal-300",
+  B1: "bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-300",
+  B2: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-300",
+  C1: "bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-300",
+  C2: "bg-fuchsia-100 text-fuchsia-800 dark:bg-fuchsia-900/40 dark:text-fuchsia-300",
+};
+
 type LessonData = {
   id: string;
   title: string;
@@ -168,10 +178,12 @@ export function Reader({ lesson }: { lesson: LessonData }) {
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-6 p-8">
       <header>
-        <p className="text-xs tracking-wide text-neutral-500 dark:text-neutral-400 uppercase">
+        <span
+          className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium tracking-wide uppercase ${LEVEL_BADGE_COLORS[lesson.level] ?? "bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300"}`}
+        >
           {lesson.level} · {lesson.type.replace("_", " ").toLowerCase()}
-        </p>
-        <h1 className="text-2xl font-semibold">{lesson.title}</h1>
+        </span>
+        <h1 className="mt-2 text-2xl font-semibold">{lesson.title}</h1>
         {lesson.topicTags.length > 0 && (
           <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
             {lesson.topicTags.join(", ")}
@@ -182,7 +194,7 @@ export function Reader({ lesson }: { lesson: LessonData }) {
       {pendingCount > 0 && (
         <p
           data-testid="pending-sync"
-          className="rounded border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200"
+          className="rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200"
         >
           {pendingCount} update{pendingCount === 1 ? "" : "s"} will sync once you&apos;re
           back online.
@@ -225,7 +237,7 @@ export function Reader({ lesson }: { lesson: LessonData }) {
           onClick={() => setFontScaleIndex((i) => Math.max(0, i - 1))}
           disabled={fontScaleIndex === 0}
           aria-label="Decrease text size"
-          className="rounded border border-neutral-300 px-2 py-1 disabled:opacity-40 dark:border-neutral-700"
+          className="rounded-full border border-neutral-300 px-2 py-1 transition-colors hover:border-fuchsia-400 hover:text-fuchsia-600 disabled:opacity-40 dark:border-neutral-700 dark:hover:border-fuchsia-500 dark:hover:text-fuchsia-400"
         >
           A-
         </button>
@@ -236,7 +248,7 @@ export function Reader({ lesson }: { lesson: LessonData }) {
           }
           disabled={fontScaleIndex === FONT_SCALES.length - 1}
           aria-label="Increase text size"
-          className="rounded border border-neutral-300 px-2 py-1 disabled:opacity-40 dark:border-neutral-700"
+          className="rounded-full border border-neutral-300 px-2 py-1 transition-colors hover:border-fuchsia-400 hover:text-fuchsia-600 disabled:opacity-40 dark:border-neutral-700 dark:hover:border-fuchsia-500 dark:hover:text-fuchsia-400"
         >
           A+
         </button>
@@ -245,7 +257,7 @@ export function Reader({ lesson }: { lesson: LessonData }) {
             type="button"
             onClick={() => setShowTranslation((v) => !v)}
             aria-pressed={showTranslation}
-            className="ml-auto rounded border border-neutral-300 px-3 py-1 dark:border-neutral-700"
+            className="ml-auto rounded-full border border-neutral-300 px-3 py-1 transition-colors hover:border-fuchsia-400 hover:text-fuchsia-600 dark:border-neutral-700 dark:hover:border-fuchsia-500 dark:hover:text-fuchsia-400"
           >
             {showTranslation ? "Hide" : "Show"} translation
           </button>
@@ -261,7 +273,7 @@ export function Reader({ lesson }: { lesson: LessonData }) {
             key={segment.id}
             className={
               segment.id === activeSegmentId
-                ? "rounded bg-amber-100 px-1 dark:bg-amber-900/40"
+                ? "rounded bg-violet-100 px-1 dark:bg-violet-900/40"
                 : undefined
             }
           >
@@ -338,7 +350,7 @@ export function Reader({ lesson }: { lesson: LessonData }) {
       {result && (
         <section
           data-testid="lesson-result"
-          className="rounded border border-green-300 bg-green-50 p-4 text-sm text-green-900 dark:border-green-800 dark:bg-green-950 dark:text-green-200"
+          className="rounded-xl border border-green-300 bg-green-50 p-4 text-sm text-green-900 dark:border-green-800 dark:bg-green-950 dark:text-green-200"
         >
           {result.correctCount === -1 ? (
             <p>

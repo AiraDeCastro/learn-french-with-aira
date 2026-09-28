@@ -74,14 +74,14 @@ export function WordSpan({
         data-testid="word-span"
         onClick={handleClick}
         aria-expanded={open}
-        className="-mx-0.5 rounded px-0.5 hover:bg-amber-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:hover:bg-amber-900/40"
+        className="-mx-0.5 rounded px-0.5 transition-colors hover:bg-fuchsia-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-fuchsia-500 dark:hover:bg-fuchsia-900/40"
       >
         {raw}
       </button>{" "}
       {open && (
         <span
           role="tooltip"
-          className="absolute left-0 top-full z-10 mt-1 block min-w-32 rounded border border-neutral-300 bg-white px-2 py-1 text-sm whitespace-nowrap text-neutral-900 shadow-lg dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+          className="absolute top-full left-0 z-10 mt-1 block min-w-32 rounded-lg border border-neutral-300 bg-white px-2 py-1 text-sm whitespace-nowrap text-neutral-900 shadow-lg dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
         >
           {lookup.isLoading && "…"}
           {lookup.isError && "Couldn't look this up — check your connection"}

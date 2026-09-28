@@ -115,7 +115,7 @@ export function SpeakingPrompt({ lessonId }: { lessonId: string }) {
       <button
         type="button"
         onClick={isRecording ? stopRecording : startRecording}
-        className="rounded border border-neutral-300 px-4 py-2 text-sm font-medium dark:border-neutral-700"
+        className="rounded-full border border-neutral-300 px-4 py-2 text-sm font-medium transition-colors hover:border-fuchsia-400 hover:text-fuchsia-600 dark:border-neutral-700 dark:hover:border-fuchsia-500 dark:hover:text-fuchsia-400"
       >
         {isRecording ? "⏹ Stop recording" : "🎙 Record a response"}
       </button>
