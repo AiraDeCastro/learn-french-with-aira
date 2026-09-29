@@ -67,23 +67,13 @@ export function ReminderSettings() {
     <div className="rounded-xl border-t-4 border-fuchsia-500 bg-neutral-50 p-4 dark:border-fuchsia-400 dark:bg-neutral-900">
       <h2 className="font-semibold">Daily reminder</h2>
       <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-        A nudge at your usual practice time — no account required, just this browser.
+        A nudge at your usual practice time — by push notification if you enable it below,
+        by email otherwise.
       </p>
 
       {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
 
-      {!settings?.hasSubscription && (
-        <button
-          type="button"
-          onClick={enableNotifications}
-          disabled={subscribing}
-          className="mt-3 rounded-full transition hover:scale-105 bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-50 dark:from-violet-300 dark:to-fuchsia-300 dark:text-neutral-900"
-        >
-          {subscribing ? "Enabling…" : "Enable notifications"}
-        </button>
-      )}
-
-      {settings?.hasSubscription && (
+      {settings && (
         <div className="mt-3 flex items-center gap-2 text-sm">
           <label htmlFor="reminderHour">Remind me around</label>
           <select
@@ -104,6 +94,21 @@ export function ReminderSettings() {
             ))}
           </select>
         </div>
+      )}
+
+      {settings?.hasSubscription ? (
+        <p className="mt-3 text-sm text-neutral-500 dark:text-neutral-400">
+          ✓ Push notifications are on for this browser.
+        </p>
+      ) : (
+        <button
+          type="button"
+          onClick={enableNotifications}
+          disabled={subscribing}
+          className="mt-3 rounded-full bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 py-2 text-sm font-medium text-white transition hover:scale-105 disabled:opacity-50 dark:from-violet-300 dark:to-fuchsia-300 dark:text-neutral-900"
+        >
+          {subscribing ? "Enabling…" : "Enable push notifications"}
+        </button>
       )}
     </div>
   );

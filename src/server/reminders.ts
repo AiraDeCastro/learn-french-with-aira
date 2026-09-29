@@ -4,17 +4,21 @@ import type { PrismaClient } from "@/generated/prisma/client";
  * Shared by the real scheduled sender (src/app/api/cron/reminders/route.ts,
  * called hourly by a GitHub Actions workflow — see docs/TASKS.md M4) and
  * the manual CLI sender (scripts/send-reminders.ts) that predates it and is
- * kept for local testing. `sendNotification` is injected rather than
- * imported directly from `web-push` so this can be unit-tested without a
- * real push send; each caller passes its own `webpush.sendNotification`.
+ * kept for local testing. `sendNotification`/`sendEmail` are injected rather
+ * than called directly so this can be unit-tested without a real push send
+ * or a real email; each caller passes its own real implementation
+ * (`webpush.sendNotification` and `sendEmailViaResend` below).
  */
 export type SendNotification = (
   subscription: { endpoint: string; keys: { p256dh: string; auth: string } },
   payload: string,
 ) => Promise<unknown>;
 
+export type SendEmail = (to: string, subject: string, html: string) => Promise<unknown>;
+
 export interface ReminderSendResult {
   sent: number;
+  emailed: number;
   skipped: number;
   pruned: number;
 }
@@ -34,17 +38,75 @@ function isWebPushError(err: unknown): err is { statusCode: number; message: str
   return typeof err === "object" && err !== null && "statusCode" in err;
 }
 
+/**
+ * The site's own stable URL, for the absolute link an email needs (unlike
+ * push's payload, which can get away with a relative "/" since the service
+ * worker resolves it against the app's own origin). `VERCEL_PROJECT_PRODUCTION_URL`
+ * is the stable custom-domain-or-production-alias Vercel sets on every
+ * deployment (including previews) — `VERCEL_URL` alone would give a
+ * per-deployment hash URL instead on some deploys.
+ */
+function appUrl(): string {
+  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
+    return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`;
+  }
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+  return "http://localhost:3000";
+}
+
+/**
+ * Real Resend implementation, shared by the cron route and the manual
+ * script — a plain `fetch` against Resend's HTTP API rather than the
+ * `resend` npm package, matching this project's preference for a direct
+ * call over a client library when the call itself is this simple (same
+ * reasoning as the self-hosted lexicon over a third-party dictionary API).
+ */
+export async function sendEmailViaResend(
+  to: string,
+  subject: string,
+  html: string,
+): Promise<void> {
+  const apiKey = process.env.AUTH_RESEND_KEY;
+  if (!apiKey) throw new Error("AUTH_RESEND_KEY is not set");
+
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: process.env.AUTH_EMAIL_FROM ?? "onboarding@resend.dev",
+      to,
+      subject,
+      html,
+    }),
+  });
+
+  if (!res.ok) {
+    throw new Error(`Resend error (${res.status}): ${await res.text()}`);
+  }
+}
+
+/**
+ * Web Push primary, email fallback (PRD §7): a learner with no push
+ * subscription registered gets emailed instead, as long as they've set a
+ * reminder hour — setting the hour is the actual signal of intent, and
+ * doesn't require push to have been set up first (see ReminderSettings.tsx).
+ */
 export async function sendDueReminders(
   db: PrismaClient,
   sendNotification: SendNotification,
+  sendEmail: SendEmail,
   opts: { all?: boolean; now?: Date } = {},
 ): Promise<ReminderSendResult> {
   const users = await db.user.findMany({
-    where: { reminderHour: { not: null }, pushSubscriptions: { some: {} } },
+    where: { reminderHour: { not: null } },
     include: { pushSubscriptions: true },
   });
 
   let sent = 0;
+  let emailed = 0;
   let skipped = 0;
   let pruned = 0;
 
@@ -56,30 +118,43 @@ export async function sendDueReminders(
       continue;
     }
 
-    const payload = JSON.stringify({
-      title: "Time for some French",
-      body: "One short lesson keeps the streak alive.",
-      url: "/",
-    });
+    if (user.pushSubscriptions.length > 0) {
+      const payload = JSON.stringify({
+        title: "Time for some French",
+        body: "One short lesson keeps the streak alive.",
+        url: "/",
+      });
 
-    for (const sub of user.pushSubscriptions) {
-      try {
-        await sendNotification(
-          { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
-          payload,
-        );
-        sent++;
-      } catch (err) {
-        // 404/410 means the browser unsubscribed or the subscription expired.
-        if (isWebPushError(err) && (err.statusCode === 404 || err.statusCode === 410)) {
-          await db.pushSubscription.delete({ where: { id: sub.id } });
-          pruned++;
-        } else {
-          console.error(`Failed to send to ${user.email}:`, err);
+      for (const sub of user.pushSubscriptions) {
+        try {
+          await sendNotification(
+            { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+            payload,
+          );
+          sent++;
+        } catch (err) {
+          // 404/410 means the browser unsubscribed or the subscription expired.
+          if (isWebPushError(err) && (err.statusCode === 404 || err.statusCode === 410)) {
+            await db.pushSubscription.delete({ where: { id: sub.id } });
+            pruned++;
+          } else {
+            console.error(`Failed to send push to ${user.email}:`, err);
+          }
         }
+      }
+    } else {
+      try {
+        await sendEmail(
+          user.email,
+          "Time for some French",
+          `<p>One short lesson keeps the streak alive.</p><p><a href="${appUrl()}">Open Learn French with Aira</a></p>`,
+        );
+        emailed++;
+      } catch (err) {
+        console.error(`Failed to email ${user.email}:`, err);
       }
     }
   }
 
-  return { sent, skipped, pruned };
+  return { sent, emailed, skipped, pruned };
 }

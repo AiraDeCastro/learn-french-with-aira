@@ -13,7 +13,11 @@ import "dotenv/config";
 import webpush from "web-push";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/client";
-import { sendDueReminders } from "../src/server/reminders";
+import {
+  sendDueReminders,
+  sendEmailViaResend,
+  type SendNotification,
+} from "../src/server/reminders";
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
@@ -21,22 +25,34 @@ const prisma = new PrismaClient({ adapter });
 const sendToAll = process.argv.includes("--all");
 
 async function main() {
-  if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
-    console.error("VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY are not set — see .env.example.");
-    process.exit(1);
-  }
-  webpush.setVapidDetails(
-    process.env.VAPID_SUBJECT ?? "mailto:dev-local@aira.test",
-    process.env.VAPID_PUBLIC_KEY,
-    process.env.VAPID_PRIVATE_KEY,
+  // Push and email are independent channels (PRD §7 fallback) — missing
+  // credentials for one just means that channel's recipients get logged as
+  // failures, not that the whole run refuses to start.
+  const pushConfigured = Boolean(
+    process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY,
   );
+  let sendNotification: SendNotification = () =>
+    Promise.reject(new Error("VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY are not set."));
+  if (pushConfigured) {
+    webpush.setVapidDetails(
+      process.env.VAPID_SUBJECT ?? "mailto:dev-local@aira.test",
+      process.env.VAPID_PUBLIC_KEY!,
+      process.env.VAPID_PRIVATE_KEY!,
+    );
+    sendNotification = webpush.sendNotification.bind(webpush);
+  } else {
+    console.warn("VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY not set — push sends will fail.");
+  }
+  if (!process.env.AUTH_RESEND_KEY) {
+    console.warn("AUTH_RESEND_KEY not set — email fallback sends will fail.");
+  }
 
-  const result = await sendDueReminders(prisma, webpush.sendNotification.bind(webpush), {
+  const result = await sendDueReminders(prisma, sendNotification, sendEmailViaResend, {
     all: sendToAll,
   });
 
   console.log(
-    `Sent ${result.sent}, skipped ${result.skipped} (not due), pruned ${result.pruned} dead subscriptions.`,
+    `Sent ${result.sent} push, emailed ${result.emailed}, skipped ${result.skipped} (not due), pruned ${result.pruned} dead subscriptions.`,
   );
 }
 

@@ -2,7 +2,11 @@ import { NextResponse, type NextRequest } from "next/server";
 import webpush from "web-push";
 import { db } from "@/server/db";
 import { isValidCronAuth } from "@/server/cron-auth";
-import { sendDueReminders } from "@/server/reminders";
+import {
+  sendDueReminders,
+  sendEmailViaResend,
+  type SendNotification,
+} from "@/server/reminders";
 
 /**
  * Triggered hourly by a scheduled GitHub Actions workflow
@@ -19,16 +23,26 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
-    return NextResponse.json({ error: "VAPID keys not configured" }, { status: 503 });
+  // Push and email are independent fallback channels (PRD §7) — missing
+  // credentials for one shouldn't stop the other from reaching anyone due.
+  // Previously this route hard-503'd on missing VAPID keys, back when push
+  // was the only channel; that's no longer the right failure mode now that
+  // an email-only learner would be blocked by a push misconfiguration that
+  // has nothing to do with them.
+  const pushConfigured = Boolean(
+    process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY,
+  );
+  let sendNotification: SendNotification = () =>
+    Promise.reject(new Error("VAPID keys not configured"));
+  if (pushConfigured) {
+    webpush.setVapidDetails(
+      process.env.VAPID_SUBJECT ?? "mailto:dev-local@aira.test",
+      process.env.VAPID_PUBLIC_KEY!,
+      process.env.VAPID_PRIVATE_KEY!,
+    );
+    sendNotification = webpush.sendNotification.bind(webpush);
   }
 
-  webpush.setVapidDetails(
-    process.env.VAPID_SUBJECT ?? "mailto:dev-local@aira.test",
-    process.env.VAPID_PUBLIC_KEY,
-    process.env.VAPID_PRIVATE_KEY,
-  );
-
-  const result = await sendDueReminders(db, webpush.sendNotification.bind(webpush));
+  const result = await sendDueReminders(db, sendNotification, sendEmailViaResend);
   return NextResponse.json(result);
 }
