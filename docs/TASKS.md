@@ -19,7 +19,7 @@ Scaffolding per [PLANNING.md §3](PLANNING.md#3-technology-stack); nothing produ
 - [ ] Wire up Sentry error tracking — blocked on a Sentry account being created
 - [ ] Wire up PostHog (EU-hosted) analytics — blocked on a PostHog account being created
 - [x] Configure Vitest and Playwright test runners (empty smoke test passing)
-- [ ] Add a Playwright E2E job to CI (currently E2E only runs locally via `npm run test:e2e` — CI only runs the fast unit tests, to avoid a slow browser download on every push)
+- [x] Add a Playwright E2E job to CI (2026-09-29) — a separate `e2e` job (own runner, own Postgres service) running in parallel with the existing `check` job, so a Chromium download doesn't slow down every push's fast unit-test gate. Only became safe to add once the local E2E suite was actually confirmed stable — see the M2 item below for the bug that was blocking that
 - [x] Add a pre-commit gate (Husky): every commit runs format check, lint, dependency-tree check, a security-audit check, typecheck, unit tests, and a full production build — a commit is refused if any of these fail
 - [x] Enforce Conventional Commits via commitlint on the commit-msg hook
 
@@ -47,7 +47,7 @@ The core learner interaction (PLANNING.md §2.2).
 - [x] Add a comprehension check (few questions) at the end of each lesson — tested live, scores correctly and records `LessonCompletion`
 - [x] Add local queueing for lesson progress and word-saves so a dropped connection mid-lesson doesn't lose data (PRD §11), syncing on reconnect — tested by simulating a failed request, confirming the queue entry, then confirming it flushes and lands in the database on reconnect
 - [x] Accessibility pass on the reader: captions/transcript always visible, adjustable text size, WCAG 2.1 AA contrast — semantic HTML throughout, transcript text is always rendered (never hidden behind a toggle), A-/A+ text-size control added; this is the lighter M2-scoped pass, **not** the full audit (that's M5's job)
-- [ ] Add a Playwright E2E test for the reader flow (read → tap-to-translate → answer quiz → complete) once M2's UI stabilizes — currently only manually verified in-browser
+- [x] Add a Playwright E2E test for the reader flow (read → tap-to-translate → answer quiz → complete) — `e2e/lesson-flow.spec.ts` (built in M5, covers this plus dropped-connection recovery); **the suite itself couldn't actually run locally for two sessions (M6, M7)** — found and fixed the real cause 2026-09-29: `playwright.config.ts`'s `reuseExistingServer` was silently attaching to a completely unrelated dev server already running on port 3000 on this shared machine (another project's, not this app's — the smoke test's title assertion started failing against a site called "Jordyn's Bakes"), not the "Chromium won't launch" issue those two sessions chased. Moved E2E to its own dedicated port (3100) in `playwright.config.ts`; all 4 tests now pass locally
 - [x] Replace the local-dev-user fallback in `src/server/current-user.ts` with the real Auth.js session once M4 wires up sign-in with real credentials — no code change needed, `getCurrentUserId()` already checked for a real session first; it just had nothing to check against until sign-in credentials were real (2026-09-28, see M0)
 
 ## M3 — Progress, Streaks & Levels
@@ -67,7 +67,7 @@ Server-authoritative per PLANNING.md §2.2 — computed on lesson completion, no
 
 Ties M1–M3 together into the flows in PRD §9.
 
-- [ ] Build signup/login flow on Auth.js — **partially done:** `/signin` page, session provider, and nav sign-in/out state are all built and tested live; still blocked on real Google OAuth + Resend credentials (same blocker as M0) before anyone can actually sign in
+- [x] Build signup/login flow on Auth.js — `/signin` page, session provider, and nav sign-in/out state are all built and tested live; real Google OAuth + Resend credentials are wired in and both verified working end-to-end (2026-09-28, see M0) — this item was left unchecked after M0's fix landed, which is corrected here
 - [x] Build onboarding: goal selection + 2–3 interest topics — `/onboarding`; interests are pulled live from real lesson topic tags (`lesson.listTopics`) rather than a hardcoded list, so they can't drift from actual content
 - [x] Wire onboarding into the placement quiz (M3) and land the learner in their first lesson same-session — placement now redirects straight into the recommended lesson via `progress.recommendNextLesson` instead of the dashboard; tested live end-to-end (onboarding → placement → landed in an interest-matched lesson)
 - [x] Build the home screen: one recommended lesson at the learner's level + interests, no browsing required — `/` branches on onboarding status; tested live, including the fallback from an interest+level match to a level-only match once the matching lesson was completed

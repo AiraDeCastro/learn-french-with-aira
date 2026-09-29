@@ -68,3 +68,59 @@ jobs:
 
       - name: Build
         run: npm run build
+
+  e2e:
+    name: E2E (Playwright)
+    runs-on: ubuntu-latest
+    # A separate job (own runner, own Postgres service) rather than a step
+    # tacked onto `check` — E2E needs a real running server plus a Chromium
+    # download, both of which would slow down the fast unit-test gate every
+    # single push. Runs in parallel with `check` instead of blocking it.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: aira_ci_e2e
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    env:
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/aira_ci_e2e?sslmode=disable
+      AUTH_SECRET: ci-only-placeholder-not-a-real-secret
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright's Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Generate Prisma client
+        run: npm run db:generate
+
+      - name: Push database schema
+        run: npm run db:push
+
+      - name: Seed database
+        run: npm run db:seed
+
+      # playwright.config.ts's webServer always starts its own server on a
+      # dedicated port in CI (reuseExistingServer is false whenever CI=true,
+      # which GitHub Actions sets automatically) — see that file's own note
+      # about why the port matters on a shared dev machine, though CI's
+      # runner is never shared, so this is just consistent behavior, not a
+      # CI-specific workaround.
+      - name: E2E tests
+        run: npm run test:e2e
